@@ -90,20 +90,25 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
 
   // Fetch counts for the dashboard
-  const { data: counts, isLoading: isLoadingCounts } = useQuery({
+  const { data: counts = { 
+    usersCount: 0, 
+    activeAssessmentsCount: 0, 
+    schemesCount: 0, 
+    asesorsCount: 0 
+  }, isLoading: isLoadingCounts } = useQuery({
     queryKey: ["/api/admin/counts"],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!user && user.role === "admin",
   });
 
   // Fetch certification schemes
-  const { data: schemes, isLoading: isLoadingSchemes } = useQuery({
+  const { data: schemes = [], isLoading: isLoadingSchemes } = useQuery<any[]>({
     queryKey: ["/api/schemes"],
     queryFn: getQueryFn({ on401: "throw" }),
   });
 
   // Fetch upcoming assessments
-  const { data: schedules, isLoading: isLoadingSchedules } = useQuery({
+  const { data: schedules = [], isLoading: isLoadingSchedules } = useQuery<any[]>({
     queryKey: ["/api/schedules"],
     queryFn: getQueryFn({ on401: "throw" }),
   });

@@ -44,20 +44,20 @@ export default function AsesorDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
 
   // Fetch assessments assigned to this asesor
-  const { data: assessments, isLoading: isLoadingAssessments } = useQuery({
+  const { data: assessments = [], isLoading: isLoadingAssessments } = useQuery<any[]>({
     queryKey: ["/api/asesor/assessments"],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!user && user.role === "asesor",
   });
 
   // Fetch certification schemes
-  const { data: schemes, isLoading: isLoadingSchemes } = useQuery({
+  const { data: schemes = [], isLoading: isLoadingSchemes } = useQuery<any[]>({
     queryKey: ["/api/schemes"],
     queryFn: getQueryFn({ on401: "throw" }),
   });
 
   // Fetch forms
-  const { data: forms, isLoading: isLoadingForms } = useQuery({
+  const { data: forms = [], isLoading: isLoadingForms } = useQuery<any[]>({
     queryKey: ["/api/asesor/forms"],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!user && user.role === "asesor",
@@ -207,19 +207,19 @@ export default function AsesorDashboard() {
                       <span className="text-sm">Menunggu Asesmen</span>
                       <Badge className="bg-amber-500">5</Badge>
                     </div>
-                    <Progress value={25} className="h-2 bg-amber-100" indicatorClassName="bg-amber-500" />
+                    <Progress value={25} className="h-2 bg-amber-100" />
                     
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Sedang Diases</span>
                       <Badge className="bg-blue-500">10</Badge>
                     </div>
-                    <Progress value={50} className="h-2 bg-blue-100" indicatorClassName="bg-blue-500" />
+                    <Progress value={50} className="h-2 bg-blue-100" />
                     
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Selesai</span>
                       <Badge className="bg-green-500">15</Badge>
                     </div>
-                    <Progress value={75} className="h-2 bg-green-100" indicatorClassName="bg-green-500" />
+                    <Progress value={75} className="h-2 bg-green-100" />
                   </div>
                 </CardContent>
                 <CardFooter className="pt-0">
