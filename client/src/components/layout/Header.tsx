@@ -117,26 +117,26 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Main navigation */}
-      <div className="bg-white shadow-sm">
-        <div className="container mx-auto px-4">
+      {/* Main navigation - Single horizontal line style */}
+      <div className="bg-white border-b">
+        <div className="container mx-auto">
           {/* Navigation - Desktop */}
-          <nav className="hidden md:block w-full md:w-auto">
-            <ul className="flex justify-center text-sm font-heading font-medium py-3">
+          <nav className="hidden md:block">
+            <ul className="flex justify-between items-center h-14">
               <li>
                 <Link
                   href="/"
-                  className={`px-5 py-2 hover:text-[#79A84B] transition-colors duration-200 ${
-                    isActive("/") ? "text-[#79A84B] font-bold" : ""
+                  className={`px-4 h-14 flex items-center hover:text-[#79A84B] transition-colors duration-200 ${
+                    isActive("/") ? "font-bold" : ""
                   }`}
                 >
                   BERANDA
                 </Link>
               </li>
-              <li className="relative group">
+              <li className="relative">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="px-5 py-2 hover:text-[#79A84B] transition-colors duration-200 flex items-center">
+                    <button className="px-4 h-14 flex items-center hover:text-[#79A84B] transition-colors duration-200">
                       PROFIL <ChevronDown className="ml-1 h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
@@ -153,10 +153,10 @@ const Header = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </li>
-              <li className="relative group">
+              <li className="relative">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="px-5 py-2 hover:text-[#79A84B] transition-colors duration-200 flex items-center">
+                    <button className="px-4 h-14 flex items-center hover:text-[#79A84B] transition-colors duration-200">
                       SERTIFIKASI <ChevronDown className="ml-1 h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
@@ -173,10 +173,10 @@ const Header = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </li>
-              <li className="relative group">
+              <li className="relative">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="px-5 py-2 hover:text-[#79A84B] transition-colors duration-200 flex items-center">
+                    <button className="px-4 h-14 flex items-center hover:text-[#79A84B] transition-colors duration-200">
                       MEDIA <ChevronDown className="ml-1 h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
@@ -193,10 +193,10 @@ const Header = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </li>
-              <li className="relative group">
+              <li className="relative">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="px-5 py-2 hover:text-[#79A84B] transition-colors duration-200 flex items-center">
+                    <button className="px-4 h-14 flex items-center hover:text-[#79A84B] transition-colors duration-200">
                       INFORMASI <ChevronDown className="ml-1 h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
@@ -216,8 +216,8 @@ const Header = () => {
               <li>
                 <Link
                   href="/registrasi"
-                  className={`px-5 py-2 hover:text-[#79A84B] transition-colors duration-200 ${
-                    isActive("/registrasi") ? "text-[#79A84B] font-bold" : ""
+                  className={`px-4 h-14 flex items-center hover:text-[#79A84B] transition-colors duration-200 ${
+                    isActive("/registrasi") ? "font-bold" : ""
                   }`}
                 >
                   REGISTRASI
@@ -226,18 +226,18 @@ const Header = () => {
               <li>
                 <Link
                   href="/formulir-sertifikasi"
-                  className={`px-5 py-2 hover:text-[#79A84B] transition-colors duration-200 ${
-                    isActive("/formulir-sertifikasi") ? "text-[#79A84B] font-bold" : ""
+                  className={`px-4 h-14 flex items-center hover:text-[#79A84B] transition-colors duration-200 ${
+                    isActive("/formulir-sertifikasi") ? "font-bold text-[#79A84B]" : ""
                   }`}
                 >
-                  FORMULIR LSP
+                  <span className="text-[#79A84B]">FORMULIR LSP</span>
                 </Link>
               </li>
               <li>
                 <Link
                   href="/formulir-asesor"
-                  className={`px-5 py-2 hover:text-[#79A84B] transition-colors duration-200 ${
-                    isActive("/formulir-asesor") ? "text-[#79A84B] font-bold" : ""
+                  className={`px-4 h-14 flex items-center hover:text-[#79A84B] transition-colors duration-200 ${
+                    isActive("/formulir-asesor") ? "font-bold" : ""
                   }`}
                 >
                   ASESOR
