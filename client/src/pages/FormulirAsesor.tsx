@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Helmet } from "react-helmet";
+import { Link } from "wouter";
 import {
   Tabs,
   TabsContent,
@@ -224,8 +225,8 @@ const FormulirAsesor: React.FC = () => {
                           <TableCell>{form.nama}</TableCell>
                           <TableCell>{form.kategori.split(" ")[0]}</TableCell>
                           <TableCell className="text-right">
-                            <Button variant="ghost" size="sm">
-                              Lihat
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link href={form.link}>Lihat</Link>
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -261,8 +262,8 @@ const FormulirAsesor: React.FC = () => {
                         </div>
                       </CardHeader>
                       <CardFooter>
-                        <Button variant="outline" size="sm" className="w-full">
-                          Lihat Formulir
+                        <Button variant="outline" size="sm" className="w-full" asChild>
+                          <Link href={form.link}>Lihat Formulir</Link>
                         </Button>
                       </CardFooter>
                     </Card>
