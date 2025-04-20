@@ -7,7 +7,7 @@ import { relations } from "drizzle-orm";
 export const statusEnum = pgEnum('status', ['active', 'inactive', 'pending', 'approved', 'rejected']);
 
 // Enum untuk roles
-export const roleEnum = pgEnum('role', ['admin', 'asesor', 'asesi', 'user']);
+export const roleEnum = pgEnum('role', ['admin', 'asesor', 'asesi']);
 
 // Enum untuk gender
 export const genderEnum = pgEnum('gender', ['L', 'P']);
@@ -29,7 +29,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   email: text("email").notNull(),
   fullName: text("full_name"),
-  role: roleEnum("role").default("user").notNull(),
+  role: roleEnum("role").default("asesi").notNull(),
   phoneNumber: text("phone_number"),
   address: text("address"),
   profilePicture: text("profile_picture"),
