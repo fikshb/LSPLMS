@@ -240,7 +240,8 @@ export default function AdminDashboard() {
 
         {/* Content */}
         <main className="flex-1 overflow-auto p-6">
-          <TabsContent value="overview" className={activeTab === "overview" ? "block" : "hidden"}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsContent value="overview">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <StatCard
                 title="Total Peserta"
@@ -360,7 +361,7 @@ export default function AdminDashboard() {
             </div>
           </TabsContent>
 
-          <TabsContent value="schemes" className={activeTab === "schemes" ? "block" : "hidden"}>
+          <TabsContent value="schemes">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -430,7 +431,7 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="users" className={activeTab === "users" ? "block" : "hidden"}>
+          <TabsContent value="users">
             <Card>
               <CardHeader>
                 <CardTitle>Manajemen Pengguna</CardTitle>
@@ -465,7 +466,7 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="assessments" className={activeTab === "assessments" ? "block" : "hidden"}>
+          <TabsContent value="assessments">
             <Card>
               <CardHeader>
                 <CardTitle>Manajemen Asesmen</CardTitle>
@@ -481,7 +482,7 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="schedule" className={activeTab === "schedule" ? "block" : "hidden"}>
+          <TabsContent value="schedule">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -543,7 +544,7 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="reports" className={activeTab === "reports" ? "block" : "hidden"}>
+          <TabsContent value="reports">
             <Card>
               <CardHeader>
                 <CardTitle>Laporan</CardTitle>
@@ -559,7 +560,7 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="settings" className={activeTab === "settings" ? "block" : "hidden"}>
+          <TabsContent value="settings">
             <Card>
               <CardHeader>
                 <CardTitle>Pengaturan</CardTitle>
@@ -574,6 +575,7 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+          </Tabs>
         </main>
       </div>
     </div>
