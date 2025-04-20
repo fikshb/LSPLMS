@@ -62,19 +62,7 @@ export default function AuthPage() {
       setActiveTab("register");
     }
   }, []);
-
-  // Redirect if user is already logged in
-  if (user) {
-    // Redirect based on role
-    if (user.role === "admin") {
-      return <Redirect to="/admin/dashboard" />;
-    } else if (user.role === "asesor") {
-      return <Redirect to="/asesor/dashboard" />;
-    } else {
-      return <Redirect to="/asesi/dashboard" />;
-    }
-  }
-
+  
   // Login form
   const loginForm = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -104,6 +92,18 @@ export default function AuthPage() {
   const onRegisterSubmit = (data: RegisterValues) => {
     registerMutation.mutate(data);
   };
+
+  // Redirect if user is already logged in
+  if (user) {
+    // Redirect based on role
+    if (user.role === "admin") {
+      return <Redirect to="/admin/dashboard" />;
+    } else if (user.role === "asesor") {
+      return <Redirect to="/asesor/dashboard" />;
+    } else {
+      return <Redirect to="/asesi/dashboard" />;
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
