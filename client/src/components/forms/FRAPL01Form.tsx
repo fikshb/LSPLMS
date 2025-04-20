@@ -22,6 +22,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { 
   Card, 
   CardContent, 
@@ -458,33 +466,70 @@ const FRAPL01Form: React.FC = () => {
                   )}
                 />
                 
-                <FormField
-                  control={form.control}
-                  name="judul"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Judul</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Masukkan judul" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="judul"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Judul</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Masukkan judul" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="nomor"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nomor</FormLabel>
+                        <FormControl>
+                          <Input placeholder="S" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 
-                <FormField
-                  control={form.control}
-                  name="nomor"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nomor</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Masukkan nomor" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="md:col-span-2 mt-4">
+                  <h4 className="font-semibold mb-2">Daftar Unit Kompetensi sesuai kemasan:</h4>
+                  
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-amber-800 text-white">
+                        <TableHead className="border border-gray-300">No.</TableHead>
+                        <TableHead className="border border-gray-300">Kode Unit</TableHead>
+                        <TableHead className="border border-gray-300">Judul Unit</TableHead>
+                        <TableHead className="border border-gray-300">Jenis Standar (Standar Khusus/Standar Internasional/SKKNI)</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow className="bg-gray-700 text-white">
+                        <TableCell className="border border-gray-300">1.</TableCell>
+                        <TableCell className="border border-gray-300">C.100000.006.01</TableCell>
+                        <TableCell className="border border-gray-300">Melaksanakan Program Dan Prosedur Keamanan Pangan</TableCell>
+                        <TableCell className="border border-gray-300">SKKNI</TableCell>
+                      </TableRow>
+                      <TableRow className="bg-gray-700 text-white">
+                        <TableCell className="border border-gray-300">2.</TableCell>
+                        <TableCell className="border border-gray-300">C.100000.008.01</TableCell>
+                        <TableCell className="border border-gray-300">Melakukan Praktek Penanganan Pangan Yang Aman</TableCell>
+                        <TableCell className="border border-gray-300">SKKNI</TableCell>
+                      </TableRow>
+                      <TableRow className="bg-gray-700 text-white">
+                        <TableCell className="border border-gray-300">3.</TableCell>
+                        <TableCell className="border border-gray-300">JUM.UM01.005.01</TableCell>
+                        <TableCell className="border border-gray-300">Melakukan Kebersihan Diri Dan Lingkungan Dalam Pengelolaan Jasa Usaha Makan Berdasarkan Prinsip Hygine Sanitasi</TableCell>
+                        <TableCell className="border border-gray-300">SKKNI</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </div>
             
