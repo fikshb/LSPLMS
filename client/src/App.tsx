@@ -10,6 +10,7 @@ import SchemeDetail from "@/pages/SchemeDetail";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import Registration from "@/pages/Registration";
+import FormulirSertifikasi from "@/pages/FormulirSertifikasi";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 
@@ -25,6 +26,7 @@ function Router() {
           <Route path="/tentang-kami" component={About} />
           <Route path="/kontak" component={Contact} />
           <Route path="/registrasi" component={Registration} />
+          <Route path="/formulir-sertifikasi" component={FormulirSertifikasi} />
           <Route component={NotFound} />
         </Switch>
       </main>

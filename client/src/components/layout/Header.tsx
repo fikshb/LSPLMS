@@ -205,6 +205,16 @@ const Header = () => {
                   REGISTRASI
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/formulir-sertifikasi"
+                  className={`px-3 py-2 rounded-md hover:bg-gray-100 transition-colors duration-200 ${
+                    isActive("/formulir-sertifikasi") ? "bg-gray-100 font-semibold" : ""
+                  }`}
+                >
+                  FORMULIR LSP
+                </Link>
+              </li>
             </ul>
           </nav>
 
@@ -276,6 +286,17 @@ const Header = () => {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     REGISTRASI
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/formulir-sertifikasi"
+                    className={`block px-3 py-2 rounded-md hover:bg-gray-100 transition-colors duration-200 ${
+                      isActive("/formulir-sertifikasi") ? "bg-gray-100 font-semibold" : ""
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    FORMULIR LSP
                   </Link>
                 </li>
               </ul>
