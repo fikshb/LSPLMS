@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 100 40% 40%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 45 86% 62%;
+    --secondary-foreground: 30 40% 20%;
+
+    --tertiary: 20 70% 32%;
+    --tertiary-foreground: 0 0% 100%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-gray-50 text-foreground;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
+
+  .hero-gradient {
+    background: linear-gradient(135deg, rgba(10, 30, 100, 0.9), rgba(0, 12, 60, 0.85));
+  }
+
+  .logo-flower {
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.1));
+  }
+
+  .primary-color {
+    color: #79A84B;
+  }
+
+  .secondary-color {
+    color: #F7D547;
+  }
+
+  .tertiary-color {
+    color: #8C3C18;
+  }
+
+  .bg-primary {
+    background-color: #79A84B;
+  }
+
+  .bg-primary-light {
+    background-color: #8FBE61;
+  }
+
+  .bg-primary-dark {
+    background-color: #618B3D;
+  }
+
+  .bg-secondary {
+    background-color: #F7D547;
+  }
+
+  .bg-secondary-light {
+    background-color: #FAE178;
+  }
+
+  .bg-secondary-dark {
+    background-color: #E6C32C;
+  }
+
+  .bg-tertiary {
+    background-color: #8C3C18;
+  }
+
+  .bg-tertiary-light {
+    background-color: #A24A24;
+  }
+
+  .bg-tertiary-dark {
+    background-color: #762F10;
+  }
+
+  .text-primary {
+    color: #79A84B;
+  }
+
+  .text-primary-light {
+    color: #8FBE61;
+  }
+
+  .text-primary-dark {
+    color: #618B3D;
+  }
+
+  .text-secondary {
+    color: #F7D547;
+  }
+
+  .text-tertiary {
+    color: #8C3C18;
+  }
+
+  .border-primary {
+    border-color: #79A84B;
+  }
+
+  .border-secondary {
+    border-color: #F7D547;
+  }
+
+  .border-tertiary {
+    border-color: #8C3C18;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  .skema-card {
+    transition: all 0.3s ease;
+  }
+
+  .skema-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+}
