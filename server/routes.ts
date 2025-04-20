@@ -2,8 +2,11 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
+import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up auth with Passport
+  setupAuth(app);
   // API routes prefix
   const apiPrefix = "/api";
 

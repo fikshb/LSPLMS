@@ -43,20 +43,20 @@ export default function AsesiDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
 
   // Fetch user's applications
-  const { data: applications, isLoading: isLoadingApplications } = useQuery({
+  const { data: applications = [], isLoading: isLoadingApplications } = useQuery<any[]>({
     queryKey: ["/api/asesi/applications"],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!user && user.role === "asesi",
   });
 
   // Fetch certification schemes for recommendations
-  const { data: schemes, isLoading: isLoadingSchemes } = useQuery({
+  const { data: schemes = [], isLoading: isLoadingSchemes } = useQuery<any[]>({
     queryKey: ["/api/schemes"],
     queryFn: getQueryFn({ on401: "throw" }),
   });
 
   // Fetch upcoming schedules
-  const { data: schedules, isLoading: isLoadingSchedules } = useQuery({
+  const { data: schedules = [], isLoading: isLoadingSchedules } = useQuery<any[]>({
     queryKey: ["/api/schedules"],
     queryFn: getQueryFn({ on401: "throw" }),
   });
