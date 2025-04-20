@@ -215,6 +215,16 @@ const Header = () => {
                   FORMULIR LSP
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/formulir-asesor"
+                  className={`px-3 py-2 rounded-md hover:bg-gray-100 transition-colors duration-200 ${
+                    isActive("/formulir-asesor") ? "bg-gray-100 font-semibold" : ""
+                  }`}
+                >
+                  ASESOR
+                </Link>
+              </li>
             </ul>
           </nav>
 
@@ -297,6 +307,17 @@ const Header = () => {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     FORMULIR LSP
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/formulir-asesor"
+                    className={`block px-3 py-2 rounded-md hover:bg-gray-100 transition-colors duration-200 ${
+                      isActive("/formulir-asesor") ? "bg-gray-100 font-semibold" : ""
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    ASESOR
                   </Link>
                 </li>
               </ul>

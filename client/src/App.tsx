@@ -12,6 +12,7 @@ import Contact from "@/pages/Contact";
 import Registration from "@/pages/Registration";
 import FormulirSertifikasi from "@/pages/FormulirSertifikasi";
 import UjianPenjamahMakanan from "@/pages/UjianPenjamahMakanan";
+import FormulirAsesor from "@/pages/FormulirAsesor";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 
@@ -29,6 +30,7 @@ function Router() {
           <Route path="/registrasi" component={Registration} />
           <Route path="/formulir-sertifikasi" component={FormulirSertifikasi} />
           <Route path="/ujian-penjamah-makanan" component={UjianPenjamahMakanan} />
+          <Route path="/formulir-asesor" component={FormulirAsesor} />
           <Route component={NotFound} />
         </Switch>
       </main>
