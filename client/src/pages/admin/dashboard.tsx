@@ -89,13 +89,21 @@ export default function AdminDashboard() {
   const { user, logoutMutation } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
 
+  // Define type for dashboard stats
+  interface DashboardCounts {
+    usersCount: number;
+    activeAssessmentsCount: number;
+    schemesCount: number;
+    asesorsCount: number;
+  }
+
   // Fetch counts for the dashboard
   const { data: counts = { 
     usersCount: 0, 
     activeAssessmentsCount: 0, 
     schemesCount: 0, 
     asesorsCount: 0 
-  }, isLoading: isLoadingCounts } = useQuery({
+  }, isLoading: isLoadingCounts } = useQuery<DashboardCounts>({
     queryKey: ["/api/admin/counts"],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!user && user.role === "admin",

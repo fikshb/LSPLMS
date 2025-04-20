@@ -1,25 +1,32 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, Request } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as UserModel } from "@shared/schema";
+import { User } from "@shared/schema";
+
+// Import connect-pg-simple for database sessions
+import connectPgSimple from "connect-pg-simple";
 
 declare global {
   namespace Express {
-    // Extend Express.User with custom User properties
+    // Extend Express.User with custom User properties from schema
     interface User {
       id: number;
       username: string;
-      fullName?: string;
-      email?: string;
       password: string;
-      role: string;
-      status?: string;
-      createdAt?: Date;
-      updatedAt?: Date;
+      email: string;
+      fullName: string | null;
+      role: "admin" | "asesor" | "asesi";
+      phoneNumber: string | null;
+      address: string | null;
+      profilePicture: string | null;
+      isActive: boolean | null;
+      lastLogin: Date | null;
+      createdAt: Date;
+      updatedAt: Date;
     }
   }
 }
