@@ -20,7 +20,10 @@ import { eq, desc, or, ilike } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
+import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { promisify } from "util";
 
+const scryptAsync = promisify(scrypt);
 const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
@@ -31,6 +34,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  hashPassword(password: string): Promise<string>;
   
   // Certification Scheme methods
   getSchemes(): Promise<CertificationScheme[]>;
@@ -182,10 +186,36 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return partner;
   }
+  
+  // Helper function for password hashing
+  async hashPassword(password: string): Promise<string> {
+    const salt = randomBytes(16).toString("hex");
+    const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+    return `${buf.toString("hex")}.${salt}`;
+  }
 
   // Seed the database with initial data if it's empty
   async seedInitialData() {
     try {
+      // Check if admin user exists
+      const adminUser = await this.getUserByUsername("admin");
+      if (!adminUser) {
+        // Create admin user with hashed password
+        const hashedPassword = await this.hashPassword("admin123"); // DO NOT USE IN PRODUCTION
+        
+        await this.createUser({
+          username: "admin",
+          password: hashedPassword,
+          email: "admin@lspwkn.id",
+          fullName: "Administrator",
+          role: "admin",
+          phoneNumber: "081234567890",
+          address: "Jl. Admin No. 1, Jakarta",
+          profilePicture: null
+        });
+        console.log("Admin user berhasil dibuat");
+      }
+
       // Check if we have any provinces already
       const existingProvinces = await this.getProvinces();
       if (existingProvinces.length === 0) {
