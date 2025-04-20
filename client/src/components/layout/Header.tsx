@@ -71,8 +71,8 @@ const Header = () => {
 
       {/* Logo and brand section */}
       <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
-          <div className="flex items-center mb-4 md:mb-0">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex-1">
             <Link href="/" className="flex items-center">
               <LSPLogo className="h-16 logo-flower" />
               <div className="ml-3">
@@ -89,18 +89,19 @@ const Header = () => {
             </Link>
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden">
+          {/* Mobile menu button - now positioned at the right side */}
+          <div className="flex md:hidden items-center justify-center">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleMobileMenu}
               aria-label={mobileMenuOpen ? "Tutup Menu" : "Buka Menu"}
+              className="p-2"
             >
               {mobileMenuOpen ? (
-                <X className="h-6 w-6" />
+                <X className="h-8 w-8" />
               ) : (
-                <Menu className="h-6 w-6" />
+                <Menu className="h-8 w-8" />
               )}
             </Button>
           </div>
