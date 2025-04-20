@@ -104,19 +104,23 @@ const Header = () => {
 
           {/* Right side buttons for login & register */}
           <div className="hidden md:flex items-center space-x-3">
-            <Button 
-              variant="outline" 
-              className="text-[#79A84B] border-[#79A84B] hover:bg-[#79A84B] hover:text-white"
-              size="sm"
-            >
-              LOGIN
-            </Button>
-            <Button 
-              className="bg-[#79A84B] text-white hover:bg-[#79A84B]/90"
-              size="sm"
-            >
-              DAFTAR
-            </Button>
+            <Link href="/auth">
+              <Button 
+                variant="outline" 
+                className="text-[#79A84B] border-[#79A84B] hover:bg-[#79A84B] hover:text-white"
+                size="sm"
+              >
+                LOGIN
+              </Button>
+            </Link>
+            <Link href="/auth?tab=register">
+              <Button 
+                className="bg-[#79A84B] text-white hover:bg-[#79A84B]/90"
+                size="sm"
+              >
+                DAFTAR
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
@@ -254,12 +258,16 @@ const Header = () => {
           {mobileMenuOpen && (
             <div className="md:hidden w-full py-4 border-t">
               <div className="flex flex-col space-y-3 mb-4">
-                <Button variant="outline" className="text-[#79A84B] border-[#79A84B] hover:bg-[#79A84B] hover:text-white">
-                  LOGIN
-                </Button>
-                <Button className="bg-[#79A84B] text-white hover:bg-[#79A84B]/90">
-                  DAFTAR
-                </Button>
+                <Link href="/auth" className="w-full" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="outline" className="text-[#79A84B] border-[#79A84B] hover:bg-[#79A84B] hover:text-white w-full">
+                    LOGIN
+                  </Button>
+                </Link>
+                <Link href="/auth?tab=register" className="w-full" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="bg-[#79A84B] text-white hover:bg-[#79A84B]/90 w-full">
+                    DAFTAR
+                  </Button>
+                </Link>
               </div>
               <ul className="flex flex-col space-y-3 text-sm font-heading font-medium">
                 <li>
