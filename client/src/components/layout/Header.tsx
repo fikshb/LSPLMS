@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { FaFacebookF, FaInstagram, FaEnvelope, FaPhoneAlt, FaMapMarkerAlt } from "react-icons/fa";
+import { FaFacebookF, FaInstagram, FaEnvelope, FaPhoneAlt } from "react-icons/fa";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { LSPLogo } from "@/assets/logo";
 import {
@@ -24,7 +24,7 @@ const Header = () => {
   };
 
   return (
-    <header className="w-full shadow-md">
+    <header className="w-full border-b shadow-sm">
       {/* Top bar */}
       <div className="bg-[#79A84B] text-white py-2 px-4">
         <div className="container mx-auto flex justify-between items-center text-sm">
@@ -37,29 +37,25 @@ const Header = () => {
               <FaEnvelope className="h-3 w-3" />
               <span>info@lspwkn.ac.id</span>
             </div>
-            <div className="hidden lg:flex items-center space-x-2">
-              <FaMapMarkerAlt className="h-3 w-3" />
-              <span>Jakarta, Indonesia</span>
-            </div>
           </div>
           <div className="flex items-center space-x-4">
             <a
               href="#"
-              className="hover:text-yellow-300 transition-colors duration-200"
+              className="hover:text-white/80 transition-colors duration-200"
               aria-label="Facebook"
             >
               <FaFacebookF />
             </a>
             <a
               href="#"
-              className="hover:text-yellow-300 transition-colors duration-200"
+              className="hover:text-white/80 transition-colors duration-200"
               aria-label="Instagram"
             >
               <FaInstagram />
             </a>
             <a
               href="#"
-              className="hover:text-yellow-300 transition-colors duration-200"
+              className="hover:text-white/80 transition-colors duration-200"
               aria-label="Email"
             >
               <FaEnvelope />
@@ -70,33 +66,33 @@ const Header = () => {
       </div>
 
       {/* Logo and brand section */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+      <div className="bg-white">
+        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex-1">
             <Link href="/" className="flex items-center">
               <LSPLogo className="h-16 logo-flower" />
               <div className="ml-3">
-                <div className="text-[#79A84B] font-heading font-semibold text-xl">
+                <div className="text-[#79A84B] font-heading font-semibold text-xl md:text-2xl leading-tight">
                   Lembaga Sertifikasi
                 </div>
-                <div className="text-[#79A84B] font-heading font-semibold text-xl">
+                <div className="text-[#79A84B] font-heading font-semibold text-xl md:text-2xl leading-tight">
                   Profesi
                 </div>
-                <div className="text-[#8C3C18] text-base font-heading font-medium">
+                <div className="text-[#8C3C18] text-base font-heading font-medium mt-0.5">
                   Wirausaha Kompeten Nusantara
                 </div>
               </div>
             </Link>
           </div>
 
-          {/* Mobile menu button - now positioned at the right side */}
+          {/* Mobile menu button - positioned at the center */}
           <div className="flex md:hidden items-center justify-center">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleMobileMenu}
               aria-label={mobileMenuOpen ? "Tutup Menu" : "Buka Menu"}
-              className="p-2"
+              className="p-1"
             >
               {mobileMenuOpen ? (
                 <X className="h-8 w-8" />
@@ -108,10 +104,17 @@ const Header = () => {
 
           {/* Right side buttons for login & register */}
           <div className="hidden md:flex items-center space-x-3">
-            <Button variant="outline" className="text-[#79A84B] border-[#79A84B] hover:bg-[#79A84B] hover:text-white">
+            <Button 
+              variant="outline" 
+              className="text-[#79A84B] border-[#79A84B] hover:bg-[#79A84B] hover:text-white"
+              size="sm"
+            >
               LOGIN
             </Button>
-            <Button className="bg-[#79A84B] text-white hover:bg-[#79A84B]/90">
+            <Button 
+              className="bg-[#79A84B] text-white hover:bg-[#79A84B]/90"
+              size="sm"
+            >
               DAFTAR
             </Button>
           </div>
@@ -119,15 +122,15 @@ const Header = () => {
       </div>
 
       {/* Main navigation - Single horizontal line style */}
-      <div className="bg-white border-b">
+      <div className="bg-white border-t">
         <div className="container mx-auto">
           {/* Navigation - Desktop */}
           <nav className="hidden md:block">
-            <ul className="flex justify-between items-center h-14">
+            <ul className="flex space-x-8 h-12">
               <li>
                 <Link
                   href="/"
-                  className={`px-4 h-14 flex items-center hover:text-[#79A84B] transition-colors duration-200 ${
+                  className={`h-12 flex items-center hover:text-[#79A84B] transition-colors duration-200 ${
                     isActive("/") ? "font-bold" : ""
                   }`}
                 >
@@ -137,7 +140,7 @@ const Header = () => {
               <li className="relative">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="px-4 h-14 flex items-center hover:text-[#79A84B] transition-colors duration-200">
+                    <button className="h-12 flex items-center hover:text-[#79A84B] transition-colors duration-200">
                       PROFIL <ChevronDown className="ml-1 h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
@@ -157,7 +160,7 @@ const Header = () => {
               <li className="relative">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="px-4 h-14 flex items-center hover:text-[#79A84B] transition-colors duration-200">
+                    <button className="h-12 flex items-center hover:text-[#79A84B] transition-colors duration-200">
                       SERTIFIKASI <ChevronDown className="ml-1 h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
@@ -177,7 +180,7 @@ const Header = () => {
               <li className="relative">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="px-4 h-14 flex items-center hover:text-[#79A84B] transition-colors duration-200">
+                    <button className="h-12 flex items-center hover:text-[#79A84B] transition-colors duration-200">
                       MEDIA <ChevronDown className="ml-1 h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
@@ -197,7 +200,7 @@ const Header = () => {
               <li className="relative">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="px-4 h-14 flex items-center hover:text-[#79A84B] transition-colors duration-200">
+                    <button className="h-12 flex items-center hover:text-[#79A84B] transition-colors duration-200">
                       INFORMASI <ChevronDown className="ml-1 h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
@@ -217,7 +220,7 @@ const Header = () => {
               <li>
                 <Link
                   href="/registrasi"
-                  className={`px-4 h-14 flex items-center hover:text-[#79A84B] transition-colors duration-200 ${
+                  className={`h-12 flex items-center hover:text-[#79A84B] transition-colors duration-200 ${
                     isActive("/registrasi") ? "font-bold" : ""
                   }`}
                 >
@@ -227,17 +230,17 @@ const Header = () => {
               <li>
                 <Link
                   href="/formulir-sertifikasi"
-                  className={`px-4 h-14 flex items-center hover:text-[#79A84B] transition-colors duration-200 ${
-                    isActive("/formulir-sertifikasi") ? "font-bold text-[#79A84B]" : ""
+                  className={`h-12 flex items-center text-[#79A84B] hover:text-[#79A84B]/80 transition-colors duration-200 ${
+                    isActive("/formulir-sertifikasi") ? "font-bold" : ""
                   }`}
                 >
-                  <span className="text-[#79A84B]">FORMULIR LSP</span>
+                  FORMULIR LSP
                 </Link>
               </li>
               <li>
                 <Link
                   href="/formulir-asesor"
-                  className={`px-4 h-14 flex items-center hover:text-[#79A84B] transition-colors duration-200 ${
+                  className={`h-12 flex items-center hover:text-[#79A84B] transition-colors duration-200 ${
                     isActive("/formulir-asesor") ? "font-bold" : ""
                   }`}
                 >
@@ -328,8 +331,8 @@ const Header = () => {
                 <li>
                   <Link
                     href="/formulir-sertifikasi"
-                    className={`block px-3 py-2 rounded-md hover:bg-gray-100 transition-colors duration-200 ${
-                      isActive("/formulir-sertifikasi") ? "bg-gray-100 text-[#79A84B] font-semibold" : ""
+                    className={`block px-3 py-2 rounded-md hover:bg-gray-100 transition-colors duration-200 text-[#79A84B] ${
+                      isActive("/formulir-sertifikasi") ? "bg-gray-100 font-semibold" : ""
                     }`}
                     onClick={() => setMobileMenuOpen(false)}
                   >
