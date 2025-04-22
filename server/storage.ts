@@ -204,13 +204,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAsesorById(id: number): Promise<User | undefined> {
-    const [asesor] = await db.select()
+    // Pastikan ID valid
+    if (!id) return undefined;
+    
+    // Cari user yang memiliki role asesor dengan id tertentu
+    const asesors = await db.select()
       .from(users)
-      .where(
-        eq(users.id, id),
-        eq(users.role, "asesor")
-      );
-    return asesor || undefined;
+      .where(eq(users.id, id));
+    
+    // Periksa apakah user ditemukan dan memiliki role asesor
+    const asesor = asesors.find(a => a.role === "asesor");
+    return asesor;
   }
 
   async createAsesor(asesorData: Omit<InsertUser, "role"> & { bidangKompetensi?: string, nomorRegistrasi?: string }): Promise<User> {

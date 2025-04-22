@@ -10,6 +10,202 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API routes prefix
   const apiPrefix = "/api";
 
+  // Middleware untuk memastikan user adalah admin
+  const requireAdmin = (req: Request, res: Response, next: Function) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (req.user?.role !== "admin") {
+      return res.status(403).json({ message: "Forbidden. Admin access required." });
+    }
+    next();
+  };
+
+  // Middleware untuk memastikan user adalah asesor
+  const requireAsesor = (req: Request, res: Response, next: Function) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (req.user?.role !== "asesor") {
+      return res.status(403).json({ message: "Forbidden. Asesor access required." });
+    }
+    next();
+  };
+
+  // Middleware untuk memastikan user adalah asesi
+  const requireAsesi = (req: Request, res: Response, next: Function) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (req.user?.role !== "asesi") {
+      return res.status(403).json({ message: "Forbidden. Asesi access required." });
+    }
+    next();
+  };
+
+  // Endpoint Admin
+
+  // Get admin dashboard counts
+  app.get(`${apiPrefix}/admin/counts`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const counts = await storage.getDashboardCounts();
+      res.json(counts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch dashboard counts" });
+    }
+  });
+
+  // Get all asesor
+  app.get(`${apiPrefix}/admin/asesors`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const asesors = await storage.getAsesors();
+      res.json(asesors);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch asesors" });
+    }
+  });
+
+  // Get asesor by ID
+  app.get(`${apiPrefix}/admin/asesors/:id`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
+      const asesor = await storage.getAsesorById(id);
+      if (!asesor) {
+        return res.status(404).json({ message: "Asesor not found" });
+      }
+      
+      res.json(asesor);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch asesor" });
+    }
+  });
+
+  // Tambah asesor baru
+  app.post(`${apiPrefix}/admin/asesors`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      // Validasi input dengan zod
+      const asesorSchema = z.object({
+        username: z.string().min(4, "Username minimal 4 karakter"),
+        email: z.string().email("Email tidak valid"),
+        password: z.string().min(6, "Password minimal 6 karakter"),
+        fullName: z.string().min(3, "Nama lengkap minimal 3 karakter"),
+        bidangKompetensi: z.string().optional(),
+        nomorRegistrasi: z.string().optional(),
+        isActive: z.boolean().default(true)
+      });
+      
+      const asesorData = asesorSchema.parse(req.body);
+      
+      // Cek apakah username sudah dipakai
+      const existingUser = await storage.getUserByUsername(asesorData.username);
+      if (existingUser) {
+        return res.status(400).json({ message: "Username sudah digunakan" });
+      }
+      
+      // Hash password
+      const hashedPassword = await storage.hashPassword(asesorData.password);
+      
+      // Create asesor
+      const asesor = await storage.createAsesor({
+        ...asesorData,
+        password: hashedPassword
+      });
+      
+      res.status(201).json(asesor);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validasi gagal", 
+          errors: error.errors
+        });
+      }
+      res.status(500).json({ message: "Failed to create asesor" });
+    }
+  });
+
+  // Update asesor
+  app.patch(`${apiPrefix}/admin/asesors/:id`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
+      // Pastikan asesor ada
+      const existingAsesor = await storage.getAsesorById(id);
+      if (!existingAsesor) {
+        return res.status(404).json({ message: "Asesor not found" });
+      }
+      
+      // Validasi input dengan zod
+      const updateSchema = z.object({
+        username: z.string().min(4, "Username minimal 4 karakter").optional(),
+        email: z.string().email("Email tidak valid").optional(),
+        password: z.string().optional(),
+        fullName: z.string().min(3, "Nama lengkap minimal 3 karakter").optional(),
+        bidangKompetensi: z.string().optional(),
+        nomorRegistrasi: z.string().optional(),
+        isActive: z.boolean().optional()
+      });
+      
+      const updateData = updateSchema.parse(req.body);
+      
+      // Cek apakah username baru sudah dipakai oleh user lain
+      if (updateData.username && updateData.username !== existingAsesor.username) {
+        const existingUser = await storage.getUserByUsername(updateData.username);
+        if (existingUser && existingUser.id !== id) {
+          return res.status(400).json({ message: "Username sudah digunakan" });
+        }
+      }
+      
+      // Update asesor
+      const updatedAsesor = await storage.updateAsesor(id, updateData);
+      
+      res.json(updatedAsesor);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validasi gagal", 
+          errors: error.errors
+        });
+      }
+      res.status(500).json({ message: "Failed to update asesor" });
+    }
+  });
+
+  // Delete asesor
+  app.delete(`${apiPrefix}/admin/asesors/:id`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
+      // Pastikan asesor ada
+      const existingAsesor = await storage.getAsesorById(id);
+      if (!existingAsesor) {
+        return res.status(404).json({ message: "Asesor not found" });
+      }
+      
+      // Delete asesor
+      const result = await storage.deleteAsesor(id);
+      
+      if (result) {
+        res.status(200).json({ message: "Asesor berhasil dihapus" });
+      } else {
+        res.status(500).json({ message: "Failed to delete asesor" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete asesor" });
+    }
+  });
+
+  // Endpoint Publik
+
   // Get all certification schemes
   app.get(`${apiPrefix}/schemes`, async (req: Request, res: Response) => {
     try {
