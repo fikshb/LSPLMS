@@ -171,7 +171,7 @@ const schemeFormSchema = z.object({
 type SchemeFormValues = z.infer<typeof schemeFormSchema>;
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [showAddAsesorDialog, setShowAddAsesorDialog] = useState(false);
   const [selectedAsesor, setSelectedAsesor] = useState<any | null>(null);
@@ -443,7 +443,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="p-6">
+    <div className="flex h-screen bg-gray-50">
       {/* Dialog untuk tambah/edit skema sertifikasi */}
       <Dialog open={showSchemeDialog} onOpenChange={setShowSchemeDialog}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -989,10 +989,7 @@ export default function AdminDashboard() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem 
-                  onClick={() => { 
-                    const { logoutMutation } = useAuth();
-                    logoutMutation.mutate();
-                  }}
+                  onClick={() => logoutMutation.mutate()}
                   className="cursor-pointer text-red-600"
                 >
                   <LogOut className="mr-2 h-4 w-4" /> Keluar
