@@ -52,6 +52,8 @@ export interface IStorage {
   getPopularSchemes(limit?: number): Promise<CertificationScheme[]>;
   searchSchemes(query: string): Promise<CertificationScheme[]>;
   createScheme(scheme: InsertCertificationScheme): Promise<CertificationScheme>;
+  updateScheme(id: number, scheme: Partial<InsertCertificationScheme>): Promise<CertificationScheme>;
+  deleteScheme(id: number): Promise<boolean>;
   
   // Province methods
   getProvinces(): Promise<Province[]>;
@@ -142,6 +144,35 @@ export class DatabaseStorage implements IStorage {
       .values(insertScheme)
       .returning();
     return scheme;
+  }
+  
+  async updateScheme(id: number, schemeData: Partial<InsertCertificationScheme>): Promise<CertificationScheme> {
+    const [scheme] = await db
+      .update(certificationSchemes)
+      .set({
+        ...schemeData,
+        updatedAt: new Date()
+      })
+      .where(eq(certificationSchemes.id, id))
+      .returning();
+    return scheme;
+  }
+  
+  async deleteScheme(id: number): Promise<boolean> {
+    try {
+      // Check if scheme exists before deleting
+      const scheme = await this.getSchemeById(id);
+      if (!scheme) {
+        return false;
+      }
+      
+      // Delete scheme
+      await db.delete(certificationSchemes).where(eq(certificationSchemes.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting scheme:", error);
+      return false;
+    }
   }
 
   // Province methods
