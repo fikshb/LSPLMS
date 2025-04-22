@@ -29,12 +29,16 @@ import UnauthorizedPage from "@/pages/unauthorized-page";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AsesorDashboard from "@/pages/asesor/dashboard";
 import AsesiDashboard from "@/pages/asesi/dashboard";
+import QuestionsPage from "@/pages/admin/questions";
+import ExaminationTemplatesPage from "@/pages/admin/examination-templates";
 
 function Router() {
   return (
     <Switch>
       {/* Rute role-based */}
       <ProtectedRoute path="/admin/dashboard" component={AdminDashboard} roles={["admin"]} />
+      <ProtectedRoute path="/admin/questions" component={QuestionsPage} roles={["admin"]} />
+      <ProtectedRoute path="/admin/examination-templates" component={ExaminationTemplatesPage} roles={["admin"]} />
       <ProtectedRoute path="/asesor/dashboard" component={AsesorDashboard} roles={["asesor"]} />
       <ProtectedRoute path="/asesi/dashboard" component={AsesiDashboard} roles={["asesi"]} />
       

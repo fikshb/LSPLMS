@@ -902,12 +902,42 @@ export default function AdminDashboard() {
               Pengguna
             </Button>
             <Button
+              variant="ghost"
+              className="w-full justify-start"
+              asChild
+            >
+              <Link href="/admin/questions">
+                <FileQuestion className="mr-2 h-5 w-5" />
+                Bank Soal
+              </Link>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              asChild
+            >
+              <Link href="/admin/examination-templates">
+                <BookOpen className="mr-2 h-5 w-5" />
+                Template Ujian
+              </Link>
+            </Button>
+            <Button
               variant={activeTab === "assessments" ? "secondary" : "ghost"}
               className="w-full justify-start"
               onClick={() => setActiveTab("assessments")}
             >
               <ClipboardList className="mr-2 h-5 w-5" />
               Asesmen
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              asChild
+            >
+              <Link href="/admin/examinations">
+                <GraduationCap className="mr-2 h-5 w-5" />
+                Ujian
+              </Link>
             </Button>
             <Button
               variant={activeTab === "schedule" ? "secondary" : "ghost"}
