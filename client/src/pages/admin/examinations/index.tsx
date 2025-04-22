@@ -223,7 +223,7 @@ export default function ExaminationsPage() {
       case "completed":
         return <Badge>Selesai (Belum Dievaluasi)</Badge>;
       case "evaluated":
-        return <Badge variant="success">Dievaluasi</Badge>;
+        return <Badge className="bg-green-600 hover:bg-green-700">Dievaluasi</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }

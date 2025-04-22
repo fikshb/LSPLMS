@@ -9,7 +9,24 @@ export async function setupExaminationRoutes(app: any, apiPrefix: string) {
       const examinations = await storage.getExaminations(
         applicationId ? parseInt(applicationId as string) : undefined
       );
-      res.json(examinations);
+      
+      // Untuk setiap ujian, dapatkan informasi template
+      const examinationsWithDetails = await Promise.all(
+        examinations.map(async (examination) => {
+          const template = await storage.getExaminationTemplateById(examination.templateId);
+          
+          // TODO: Dapatkan informasi aplikasi sertifikasi (dan asesi) ketika API siap
+          const application = { id: examination.applicationId };
+          
+          return {
+            ...examination,
+            template,
+            application
+          };
+        })
+      );
+      
+      res.json(examinationsWithDetails);
     } catch (error: any) {
       console.error("Error fetching examinations:", error);
       res.status(500).json({
@@ -29,7 +46,30 @@ export async function setupExaminationRoutes(app: any, apiPrefix: string) {
         return res.status(404).json({ message: "Ujian tidak ditemukan" });
       }
       
-      res.json(examination);
+      // Dapatkan informasi template ujian
+      const template = await storage.getExaminationTemplateById(examination.templateId);
+      
+      // Dapatkan informasi aplikasi sertifikasi (dan asesi)
+      // TODO: Implementasikan getCertificationApplicationById
+      // const application = await storage.getCertificationApplicationById(examination.applicationId);
+      const application = { id: examination.applicationId }; // Untuk sementara
+      
+      // Untuk ujian yang sudah selesai, dapatkan pertanyaan dan jawaban
+      let questions: any[] = [];
+      if (examination.status === "completed" || examination.status === "evaluated") {
+        // TODO: Tambahkan metode untuk mendapatkan pertanyaan dan jawaban ujian
+        // questions = await storage.getExaminationQuestions(examination.id);
+      }
+      
+      // Gabungkan informasi
+      const result = {
+        ...examination,
+        template,
+        application,
+        questions
+      };
+      
+      res.json(result);
     } catch (error: any) {
       console.error("Error fetching examination:", error);
       res.status(500).json({
