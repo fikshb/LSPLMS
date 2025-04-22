@@ -260,6 +260,7 @@ export default function ExaminationsPage() {
                               variant="outline"
                               size="sm"
                               disabled={examination.status !== "completed"}
+                              onClick={() => window.location.href = `/admin/examinations/${examination.id}`}
                             >
                               <ClipboardCheckIcon className="h-4 w-4 mr-1" />
                               Evaluasi
@@ -267,6 +268,7 @@ export default function ExaminationsPage() {
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={() => window.location.href = `/admin/examinations/${examination.id}`}
                             >
                               <ListIcon className="h-4 w-4 mr-1" />
                               Detail

@@ -186,9 +186,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   {group.items.map((item, itemIndex) => (
                     <li key={itemIndex}>
                       <Link href={item.href}>
-                        <a
+                        <div
                           className={cn(
-                            "flex items-center px-4 py-2 text-sm rounded-md",
+                            "flex items-center px-4 py-2 text-sm rounded-md cursor-pointer",
                             location === item.href
                               ? "bg-[#79A84B] text-white"
                               : "text-gray-700 hover:bg-gray-100"
@@ -196,7 +196,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         >
                           {item.icon}
                           <span className="ml-3">{item.title}</span>
-                        </a>
+                        </div>
                       </Link>
                     </li>
                   ))}
