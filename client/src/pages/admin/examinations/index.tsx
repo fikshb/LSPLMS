@@ -17,7 +17,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import AdminLayout from "@/components/admin-layout";
+// Ganti import AdminLayout
+// import AdminLayout from "@/components/admin-layout";
+// dengan div wrapper sementara
+const AdminLayout = ({ children }: { children: React.ReactNode }) => (
+  <div className="admin-layout-wrapper">{children}</div>
+);
 
 // Type definitions
 type Examination = {

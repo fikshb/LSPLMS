@@ -5,6 +5,7 @@ import { z } from "zod";
 import { setupAuth } from "./auth";
 import { insertCertificationSchemeSchema } from "../shared/schema";
 import { desc, eq, or, ilike, count } from "drizzle-orm";
+import { setupExaminationRoutes } from "./routes/examinations";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up auth with Passport
