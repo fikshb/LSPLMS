@@ -327,9 +327,391 @@ export default function AdminDashboard() {
     });
     setShowAddAsesorDialog(true);
   };
+  
+  // Mutation untuk menambah skema sertifikasi baru
+  const createSchemeMutation = useMutation({
+    mutationFn: async (newScheme: SchemeFormValues) => {
+      const res = await apiRequest("POST", `/api/admin/schemes?nocache=${Date.now()}`, newScheme);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Skema berhasil ditambahkan",
+        description: "Skema sertifikasi baru telah berhasil dibuat.",
+      });
+      setShowSchemeDialog(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/schemes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/counts"] });
+      schemeForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Gagal menambahkan skema",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Mutation untuk mengedit skema sertifikasi
+  const updateSchemeMutation = useMutation({
+    mutationFn: async (updatedScheme: SchemeFormValues & { id: number }) => {
+      const { id, ...schemeData } = updatedScheme;
+      const res = await apiRequest("PATCH", `/api/admin/schemes/${id}?nocache=${Date.now()}`, schemeData);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Skema berhasil diperbarui",
+        description: "Skema sertifikasi telah berhasil diperbarui.",
+      });
+      setShowSchemeDialog(false);
+      setSelectedScheme(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/schemes"] });
+      schemeForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Gagal memperbarui skema",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Mutation untuk menghapus skema sertifikasi
+  const deleteSchemeMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/admin/schemes/${id}?nocache=${Date.now()}`);
+      return res.ok;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Skema berhasil dihapus",
+        description: "Skema sertifikasi telah berhasil dihapus.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/schemes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/counts"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Gagal menghapus skema",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Handler untuk proses submit form skema
+  const onSubmitScheme = (data: SchemeFormValues) => {
+    if (selectedScheme) {
+      updateSchemeMutation.mutate({ ...data, id: selectedScheme.id });
+    } else {
+      createSchemeMutation.mutate(data);
+    }
+  };
+  
+  // Handler untuk edit skema yang sudah ada
+  const handleEditScheme = (scheme: any) => {
+    setSelectedScheme(scheme);
+    schemeForm.reset({
+      name: scheme.name,
+      slug: scheme.slug || "",
+      code: scheme.code || "",
+      description: scheme.description || "",
+      category: scheme.category || "",
+      price: scheme.price || "",
+      duration: scheme.duration || "",
+      requirements: scheme.requirements || "",
+      isPopular: scheme.isPopular || false,
+      image: scheme.image || "",
+      eligibility: scheme.eligibility || "",
+      benefits: scheme.benefits || "",
+      status: scheme.status || "active",
+    });
+    setShowSchemeDialog(true);
+  };
+  
+  // Handler untuk konfirmasi hapus skema
+  const handleDeleteScheme = (scheme: any) => {
+    if (confirm(`Apakah Anda yakin ingin menghapus skema "${scheme.name}"?`)) {
+      deleteSchemeMutation.mutate(scheme.id);
+    }
+  };
 
   return (
     <div className="flex h-screen bg-gray-50">
+      {/* Dialog untuk tambah/edit skema sertifikasi */}
+      <Dialog open={showSchemeDialog} onOpenChange={setShowSchemeDialog}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedScheme ? "Edit Skema Sertifikasi" : "Tambah Skema Sertifikasi Baru"}</DialogTitle>
+            <DialogDescription>
+              {selectedScheme
+                ? "Ubah data skema sertifikasi dengan mengisi form di bawah ini."
+                : "Tambahkan skema sertifikasi baru dengan mengisi form di bawah ini."}
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...schemeForm}>
+            <form onSubmit={schemeForm.handleSubmit(onSubmitScheme)} className="space-y-4">
+              {/* Nama Skema */}
+              <FormField
+                control={schemeForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nama Skema Sertifikasi</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Contoh: Digital Marketing" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Kode Skema */}
+              <FormField
+                control={schemeForm.control}
+                name="code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Kode Skema (opsional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Contoh: SKM-001" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Slug */}
+              <FormField
+                control={schemeForm.control}
+                name="slug"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Slug URL (opsional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Contoh: digital-marketing" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormDescription>
+                      Akan diisi otomatis jika kosong
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Kategori */}
+              <FormField
+                control={schemeForm.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Kategori (opsional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Contoh: Bisnis, IT, Kuliner" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Deskripsi */}
+              <FormField
+                control={schemeForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Deskripsi</FormLabel>
+                    <FormControl>
+                      <textarea 
+                        className="flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        placeholder="Deskripsi lengkap skema sertifikasi" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Biaya */}
+              <FormField
+                control={schemeForm.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Biaya (opsional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Contoh: Rp 1.000.000" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Durasi */}
+              <FormField
+                control={schemeForm.control}
+                name="duration"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Durasi (opsional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Contoh: 2 hari" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Persyaratan */}
+              <FormField
+                control={schemeForm.control}
+                name="requirements"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Persyaratan (opsional)</FormLabel>
+                    <FormControl>
+                      <textarea 
+                        className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        placeholder="Persyaratan untuk mengikuti sertifikasi" 
+                        {...field} 
+                        value={field.value || ""} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Kelayakan */}
+              <FormField
+                control={schemeForm.control}
+                name="eligibility"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Kelayakan Peserta (opsional)</FormLabel>
+                    <FormControl>
+                      <textarea 
+                        className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        placeholder="Kriteria kelayakan peserta" 
+                        {...field} 
+                        value={field.value || ""} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Manfaat */}
+              <FormField
+                control={schemeForm.control}
+                name="benefits"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Manfaat (opsional)</FormLabel>
+                    <FormControl>
+                      <textarea 
+                        className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        placeholder="Manfaat mengikuti sertifikasi" 
+                        {...field} 
+                        value={field.value || ""} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* URL Gambar */}
+              <FormField
+                control={schemeForm.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>URL Gambar (opsional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://example.com/image.jpg" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Status */}
+              <FormField
+                control={schemeForm.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih status skema" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="active">Aktif</SelectItem>
+                        <SelectItem value="inactive">Tidak Aktif</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Popular */}
+              <FormField
+                control={schemeForm.control}
+                name="isPopular"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Tampilkan di Skema Populer</FormLabel>
+                      <FormDescription>
+                        Jika dicentang, skema akan ditampilkan di bagian "Skema Populer" di halaman utama
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter className="pt-4">
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => {
+                    setShowSchemeDialog(false);
+                    schemeForm.reset();
+                    setSelectedScheme(null);
+                  }}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Batal
+                </Button>
+                <Button type="submit" className="bg-[#79A84B]">
+                  <Save className="h-4 w-4 mr-2" />
+                  {selectedScheme ? "Perbarui Skema" : "Tambah Skema"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
       {/* Dialog untuk tambah/edit asesor */}
       <Dialog open={showAddAsesorDialog} onOpenChange={setShowAddAsesorDialog}>
         <DialogContent className="sm:max-w-[500px]">
@@ -724,11 +1106,38 @@ export default function AdminDashboard() {
                     Kelola skema sertifikasi yang tersedia
                   </CardDescription>
                 </div>
-                <Button className="bg-[#79A84B]">Tambah Skema Baru</Button>
+                <Button 
+                  className="bg-[#79A84B]"
+                  onClick={() => {
+                    setSelectedScheme(null);
+                    schemeForm.reset({
+                      name: "",
+                      slug: "",
+                      code: "",
+                      description: "",
+                      category: "",
+                      price: "",
+                      duration: "",
+                      requirements: "",
+                      isPopular: false,
+                      image: "",
+                      eligibility: "",
+                      benefits: "",
+                      status: "active",
+                    });
+                    setShowSchemeDialog(true);
+                  }}
+                >
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Tambah Skema Baru
+                </Button>
               </CardHeader>
               <CardContent>
                 {isLoadingSchemes ? (
-                  <div className="text-center py-4">Loading...</div>
+                  <div className="text-center py-4">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
+                    <p>Memuat data skema sertifikasi...</p>
+                  </div>
                 ) : schemes && schemes.length > 0 ? (
                   <div className="border rounded-md">
                     <div className="grid grid-cols-12 gap-4 p-4 font-medium bg-muted">
@@ -766,10 +1175,21 @@ export default function AdminDashboard() {
                           </span>
                         </div>
                         <div className="col-span-2 flex space-x-2">
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditScheme(scheme)}
+                          >
+                            <Edit className="h-3.5 w-3.5 mr-1" />
                             Edit
                           </Button>
-                          <Button variant="outline" size="sm" className="text-red-500">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-500"
+                            onClick={() => handleDeleteScheme(scheme)}
+                          >
+                            <Trash className="h-3.5 w-3.5 mr-1" />
                             Hapus
                           </Button>
                         </div>
@@ -777,8 +1197,20 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-4 text-muted-foreground">
-                    Belum ada skema sertifikasi. Tambahkan skema baru.
+                  <div className="text-center py-8 border rounded-md">
+                    <Award className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+                    <p className="text-muted-foreground mb-4">Belum ada skema sertifikasi. Tambahkan skema baru.</p>
+                    <Button 
+                      className="bg-[#79A84B]"
+                      onClick={() => {
+                        setSelectedScheme(null);
+                        schemeForm.reset();
+                        setShowSchemeDialog(true);
+                      }}
+                    >
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      Tambah Skema Sertifikasi
+                    </Button>
                   </div>
                 )}
               </CardContent>
