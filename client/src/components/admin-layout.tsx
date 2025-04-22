@@ -1,35 +1,117 @@
-import { ReactNode } from "react";
+import React, { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useAuth } from "@/hooks/use-auth";
-import {
-  BarChart3,
-  Users,
-  GraduationCap,
-  Calendar,
-  Settings,
-  LogOut,
-  User,
-  BookOpen,
-  FileQuestion,
-  ClipboardList
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  ChevronLeftIcon,
+  HomeIcon,
+  LogOutIcon,
+  UsersIcon,
+  BookOpenIcon,
+  CalendarIcon,
+  FileTextIcon,
+  BarChart3Icon,
+  Settings2Icon,
+  MenuIcon,
+  XIcon,
+  AwardIcon,
+  ClipboardListIcon,
+  LayersIcon,
+  FileIcon
+} from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
+// Define the navigation items for the sidebar
 type NavItem = {
   title: string;
   href: string;
   icon: React.ReactNode;
 };
+
+// Group navigation items
+type NavGroup = {
+  title: string;
+  items: NavItem[];
+};
+
+const navGroups: NavGroup[] = [
+  {
+    title: "Dashboard",
+    items: [
+      {
+        title: "Dashboard",
+        href: "/admin",
+        icon: <HomeIcon className="h-5 w-5" />,
+      },
+    ],
+  },
+  {
+    title: "Manajemen",
+    items: [
+      {
+        title: "Asesor",
+        href: "/admin/asesors",
+        icon: <UsersIcon className="h-5 w-5" />,
+      },
+      {
+        title: "Skema Sertifikasi",
+        href: "/admin/schemes",
+        icon: <BookOpenIcon className="h-5 w-5" />,
+      },
+      {
+        title: "Jadwal",
+        href: "/admin/schedules",
+        icon: <CalendarIcon className="h-5 w-5" />,
+      },
+    ],
+  },
+  {
+    title: "Ujian",
+    items: [
+      {
+        title: "Bank Soal",
+        href: "/admin/questions",
+        icon: <ClipboardListIcon className="h-5 w-5" />,
+      },
+      {
+        title: "Template Ujian",
+        href: "/admin/examination-templates",
+        icon: <LayersIcon className="h-5 w-5" />,
+      },
+      {
+        title: "Ujian",
+        href: "/admin/examinations",
+        icon: <FileIcon className="h-5 w-5" />,
+      },
+    ]
+  },
+  {
+    title: "Laporan",
+    items: [
+      {
+        title: "Statistik",
+        href: "/admin/statistics",
+        icon: <BarChart3Icon className="h-5 w-5" />,
+      },
+      {
+        title: "Sertifikat",
+        href: "/admin/certificates",
+        icon: <AwardIcon className="h-5 w-5" />,
+      },
+    ],
+  },
+  {
+    title: "Pengaturan",
+    items: [
+      {
+        title: "Pengaturan",
+        href: "/admin/settings",
+        icon: <Settings2Icon className="h-5 w-5" />,
+      },
+    ],
+  },
+];
 
 type AdminLayoutProps = {
   children: ReactNode;
@@ -38,160 +120,132 @@ type AdminLayoutProps = {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
-
-  const navItems: NavItem[] = [
-    {
-      title: "Dashboard",
-      href: "/admin",
-      icon: <BarChart3 className="h-5 w-5" />,
-    },
-    {
-      title: "Asesor",
-      href: "/admin/asesors",
-      icon: <Users className="h-5 w-5" />,
-    },
-    {
-      title: "Skema Sertifikasi",
-      href: "/admin/schemes",
-      icon: <GraduationCap className="h-5 w-5" />,
-    },
-    {
-      title: "Bank Soal",
-      href: "/admin/questions",
-      icon: <BookOpen className="h-5 w-5" />,
-    },
-    {
-      title: "Template Ujian",
-      href: "/admin/examination-templates",
-      icon: <FileQuestion className="h-5 w-5" />,
-    },
-    {
-      title: "Ujian",
-      href: "/admin/examinations",
-      icon: <ClipboardList className="h-5 w-5" />,
-    },
-    {
-      title: "Jadwal",
-      href: "/admin/schedules",
-      icon: <Calendar className="h-5 w-5" />,
-    },
-    {
-      title: "Pengaturan",
-      href: "/admin/settings",
-      icon: <Settings className="h-5 w-5" />,
-    },
-  ];
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const handleLogout = () => {
     logoutMutation.mutate();
   };
 
-  const getInitials = (name: string) => {
-    if (!name) return "A";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
+      {/* Mobile sidebar toggle */}
+      <div className="lg:hidden fixed top-4 left-4 z-50">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="bg-white"
+        >
+          {isSidebarOpen ? (
+            <XIcon className="h-5 w-5" />
+          ) : (
+            <MenuIcon className="h-5 w-5" />
+          )}
+        </Button>
+      </div>
+
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-sm border-r hidden md:block">
-        <div className="h-full flex flex-col">
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-md transition-transform lg:translate-x-0",
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <div className="flex flex-col h-full">
+          {/* Sidebar header */}
           <div className="p-4 border-b">
-            <Link href="/admin">
-              <a className="flex items-center">
-                <img
-                  src="/logo.png"
-                  alt="LSP WKN"
-                  className="h-8 w-auto"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://placehold.co/80x40?text=LSP';
-                  }}
-                />
-                <span className="ml-2 text-lg font-semibold">LSP WKN</span>
-              </a>
-            </Link>
-          </div>
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {navItems.map((item) => (
-              <Link key={item.href} href={item.href}>
-                <a
-                  className={cn(
-                    "flex items-center py-2 px-3 rounded-md text-sm font-medium transition-colors",
-                    location === item.href
-                      ? "bg-primary text-primary-foreground"
-                      : "text-gray-700 hover:bg-gray-100"
-                  )}
-                >
-                  {item.icon}
-                  <span className="ml-3">{item.title}</span>
-                </a>
-              </Link>
-            ))}
-          </nav>
-          <div className="p-4 border-t">
-            <div className="flex items-center">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.profilePicture || ""} />
-                <AvatarFallback>{getInitials(user?.fullName || user?.username || "")}</AvatarFallback>
-              </Avatar>
-              <div className="ml-2 flex-1">
-                <p className="text-sm font-medium">{user?.fullName || user?.username}</p>
-                <p className="text-xs text-gray-500">Administrator</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-10 h-10 bg-[#79A84B] rounded-md flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">LSP</span>
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold">LSP WKN</h2>
+                  <p className="text-xs text-gray-500">Panel Admin</p>
+                </div>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <User className="h-4 w-4 mr-2" /> Profil
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="h-4 w-4 mr-2" /> Pengaturan
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="h-4 w-4 mr-2" /> Keluar
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <ChevronLeftIcon className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Sidebar navigation */}
+          <div className="flex-1 overflow-y-auto py-4 px-3">
+            {navGroups.map((group, groupIndex) => (
+              <div key={groupIndex} className="mb-6">
+                <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  {group.title}
+                </h3>
+                <ul className="space-y-1">
+                  {group.items.map((item, itemIndex) => (
+                    <li key={itemIndex}>
+                      <Link href={item.href}>
+                        <a
+                          className={cn(
+                            "flex items-center px-4 py-2 text-sm rounded-md",
+                            location === item.href
+                              ? "bg-[#79A84B] text-white"
+                              : "text-gray-700 hover:bg-gray-100"
+                          )}
+                        >
+                          {item.icon}
+                          <span className="ml-3">{item.title}</span>
+                        </a>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {/* Sidebar footer */}
+          <div className="p-4 border-t">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Avatar>
+                  <AvatarImage src="" />
+                  <AvatarFallback className="bg-[#8C3C18] text-white">
+                    {user?.fullName
+                      ?.split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase() || "AD"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-sm font-medium">{user?.fullName || "Admin"}</p>
+                  <p className="text-xs text-gray-500">{user?.email}</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                title="Logout"
+              >
+                <LogOutIcon className="h-5 w-5" />
+              </Button>
             </div>
           </div>
         </div>
-      </div>
+      </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top navbar */}
-        <header className="bg-white shadow-sm border-b h-14 flex items-center px-4 md:hidden">
-          <Link href="/admin">
-            <a className="flex items-center">
-              <img
-                src="/logo.png"
-                alt="LSP WKN"
-                className="h-8 w-auto"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://placehold.co/80x40?text=LSP';
-                }}
-              />
-              <span className="ml-2 text-lg font-semibold">LSP WKN</span>
-            </a>
-          </Link>
-        </header>
-
-        {/* Main content container */}
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
+      <div
+        className={cn(
+          "transition-all duration-300 ease-in-out",
+          isSidebarOpen ? "lg:ml-64" : "ml-0"
+        )}
+      >
+        {/* Content area */}
+        <main className="min-h-screen p-4 md:p-8">{children}</main>
       </div>
     </div>
   );

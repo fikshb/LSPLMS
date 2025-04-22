@@ -562,85 +562,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // API untuk ujian
-  app.get(`${apiPrefix}/examinations`, async (req: Request, res: Response) => {
-    try {
-      const applicationId = req.query.applicationId ? parseInt(req.query.applicationId as string) : undefined;
-      
-      const examinations = await storage.getExaminations(applicationId);
-      res.json(examinations);
-    } catch (error) {
-      console.error("Error fetching examinations:", error);
-      res.status(500).json({ message: "Terjadi kesalahan saat mengambil data ujian" });
-    }
-  });
-  
-  app.get(`${apiPrefix}/examinations/:id`, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      const examination = await storage.getExaminationById(id);
-      
-      if (!examination) {
-        return res.status(404).json({ message: "Ujian tidak ditemukan" });
-      }
-      
-      res.json(examination);
-    } catch (error) {
-      console.error("Error fetching examination:", error);
-      res.status(500).json({ message: "Terjadi kesalahan saat mengambil data ujian" });
-    }
-  });
-  
-  app.post(`${apiPrefix}/examinations`, requireAdmin, async (req: Request, res: Response) => {
-    try {
-      const examination = await storage.createExamination(req.body);
-      
-      res.status(201).json(examination);
-    } catch (error) {
-      console.error("Error creating examination:", error);
-      res.status(500).json({ message: "Terjadi kesalahan saat membuat ujian" });
-    }
-  });
-  
-  app.post(`${apiPrefix}/examinations/:id/start`, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      const examination = await storage.startExamination(id);
-      
-      res.json(examination);
-    } catch (error) {
-      console.error("Error starting examination:", error);
-      res.status(500).json({ message: "Terjadi kesalahan saat memulai ujian" });
-    }
-  });
-  
-  app.post(`${apiPrefix}/examinations/:id/submit`, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      const answers = req.body.answers;
-      
-      const examination = await storage.submitExamination(id, answers);
-      
-      res.json(examination);
-    } catch (error) {
-      console.error("Error submitting examination:", error);
-      res.status(500).json({ message: "Terjadi kesalahan saat mengirimkan ujian" });
-    }
-  });
-  
-  app.post(`${apiPrefix}/examinations/:id/evaluate`, requireAsesor, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      const evaluatorId = req.user!.id;
-      
-      const examination = await storage.evaluateExamination(id, evaluatorId);
-      
-      res.json(examination);
-    } catch (error) {
-      console.error("Error evaluating examination:", error);
-      res.status(500).json({ message: "Terjadi kesalahan saat mengevaluasi ujian" });
-    }
-  });
+  // Setup examination routes from separate file
+  await setupExaminationRoutes(app, apiPrefix);
 
   const httpServer = createServer(app);
   return httpServer;

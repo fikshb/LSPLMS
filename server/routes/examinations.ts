@@ -5,10 +5,9 @@ export async function setupExaminationRoutes(app: any, apiPrefix: string) {
   // Get all examinations
   app.get(`${apiPrefix}/examinations`, async (req: Request, res: Response) => {
     try {
-      const { status } = req.query;
+      const { status, applicationId } = req.query;
       const examinations = await storage.getExaminations(
-        undefined, 
-        status as string | undefined
+        applicationId ? parseInt(applicationId as string) : undefined
       );
       res.json(examinations);
     } catch (error: any) {
@@ -127,9 +126,9 @@ export async function setupExaminationRoutes(app: any, apiPrefix: string) {
   // Get eligible applications for examinations
   app.get(`${apiPrefix}/certification-applications/eligible`, async (req: Request, res: Response) => {
     try {
-      // Implementasi baru untuk mengambil aplikasi eligible untuk ujian
-      // Untuk sementara, kita gunakan data dummy atau semua aplikasi
-      const applications = await storage.getCertificationApplications();
+      // Untuk sementara, kita gunakan data aplikasi sertifikasi yang ada
+      // TODO: Implementasikan logika untuk aplikasi yang eligible
+      const applications = [];  // Database belum siap, sementara return array kosong
       res.json(applications);
     } catch (error: any) {
       console.error("Error fetching eligible applications:", error);
