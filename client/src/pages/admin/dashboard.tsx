@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { getQueryFn } from "@/lib/queryClient";
+import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,7 +53,6 @@ import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Users,
   Award,
@@ -210,11 +209,12 @@ export default function AdminDashboard() {
     placeholderData: []
   });
   
+  // Mutation functions dari API Services
+
   // Mutation untuk menambah asesor baru
   const createAsesorMutation = useMutation({
     mutationFn: async (newAsesor: AsesorFormValues) => {
-      const res = await apiRequest("POST", "/api/admin/asesors", newAsesor);
-      return await res.json();
+      return await createAsesor(newAsesor);
     },
     onSuccess: () => {
       toast({
@@ -239,8 +239,7 @@ export default function AdminDashboard() {
   const updateAsesorMutation = useMutation({
     mutationFn: async (updatedAsesor: AsesorFormValues & { id: number }) => {
       const { id, ...asesorData } = updatedAsesor;
-      const res = await apiRequest("PATCH", `/api/admin/asesors/${id}`, asesorData);
-      return await res.json();
+      return await updateAsesor(id, asesorData);
     },
     onSuccess: () => {
       toast({
