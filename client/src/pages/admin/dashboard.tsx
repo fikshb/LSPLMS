@@ -148,11 +148,32 @@ const asesorFormSchema = z.object({
 
 type AsesorFormValues = z.infer<typeof asesorFormSchema>;
 
+// Form validation schema untuk tambah/edit skema sertifikasi
+const schemeFormSchema = z.object({
+  name: z.string().min(5, "Nama skema minimal 5 karakter"),
+  slug: z.string().optional(),
+  code: z.string().min(2, "Kode skema minimal 2 karakter").optional(),
+  description: z.string().min(10, "Deskripsi minimal 10 karakter"),
+  category: z.string().optional(),
+  price: z.string().optional(),
+  duration: z.string().optional(),
+  requirements: z.string().optional(),
+  isPopular: z.boolean().default(false),
+  image: z.string().optional(),
+  eligibility: z.string().optional(),
+  benefits: z.string().optional(),
+  status: z.enum(["active", "inactive"]).default("active"),
+});
+
+type SchemeFormValues = z.infer<typeof schemeFormSchema>;
+
 export default function AdminDashboard() {
   const { user, logoutMutation } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [showAddAsesorDialog, setShowAddAsesorDialog] = useState(false);
   const [selectedAsesor, setSelectedAsesor] = useState<any | null>(null);
+  const [showSchemeDialog, setShowSchemeDialog] = useState(false);
+  const [selectedScheme, setSelectedScheme] = useState<any | null>(null);
   const { toast } = useToast();
 
   // Define type for dashboard stats
@@ -174,6 +195,26 @@ export default function AdminDashboard() {
       bidangKompetensi: "",
       nomorRegistrasi: "",
       isActive: true,
+    },
+  });
+  
+  // Form untuk tambah/edit skema sertifikasi
+  const schemeForm = useForm<SchemeFormValues>({
+    resolver: zodResolver(schemeFormSchema),
+    defaultValues: {
+      name: "",
+      slug: "",
+      code: "",
+      description: "",
+      category: "",
+      price: "",
+      duration: "",
+      requirements: "",
+      isPopular: false,
+      image: "",
+      eligibility: "",
+      benefits: "",
+      status: "active",
     },
   });
 
