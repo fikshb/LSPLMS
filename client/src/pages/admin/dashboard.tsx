@@ -74,6 +74,9 @@ import {
   Loader2,
   X,
   Save,
+  BookOpen,
+  FileQuestion,
+  GraduationCap,
 } from "lucide-react";
 import { LSPLogo } from "@/assets/logo";
 import {
