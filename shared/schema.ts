@@ -450,6 +450,38 @@ export const examinationsRelations = relations(examinations, ({ one }) => ({
   }),
 }));
 
+// Tabel jawaban ujian peserta
+export const examinationAnswers = pgTable("examination_answers", {
+  id: serial("id").primaryKey(),
+  examinationId: integer("examination_id").references(() => examinations.id).notNull(),
+  questionId: integer("question_id").references(() => questions.id).notNull(),
+  answer: text("answer").notNull(),
+  isCorrect: boolean("is_correct"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const examinationAnswersRelations = relations(examinationAnswers, ({ one }) => ({
+  examination: one(examinations, {
+    fields: [examinationAnswers.examinationId],
+    references: [examinations.id],
+  }),
+  question: one(questions, {
+    fields: [examinationAnswers.questionId],
+    references: [questions.id],
+  }),
+}));
+
+export const insertExaminationAnswerSchema = createInsertSchema(examinationAnswers).omit({
+  id: true,
+  isCorrect: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertExaminationAnswer = z.infer<typeof insertExaminationAnswerSchema>;
+export type ExaminationAnswer = typeof examinationAnswers.$inferSelect;
+
 export const insertExaminationSchema = createInsertSchema(examinations).omit({
   id: true,
   startTime: true,
