@@ -1,16 +1,18 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useParams } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, CheckCircle, XCircle } from "lucide-react";
+
 import AdminLayout from "@/components/admin-layout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, ArrowLeft, Check, X, HelpCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 
 type Examination = {
   id: number;
@@ -60,91 +62,118 @@ type Examination = {
 };
 
 export default function ExaminationDetailPage() {
-  const params = useParams();
-  const id = params.id ? parseInt(params.id) : 0;
+  const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
-  const [isEvaluateDialogOpen, setIsEvaluateDialogOpen] = useState(false);
+  const [evaluateDialogOpen, setEvaluateDialogOpen] = useState(false);
 
-  // Query to fetch examination details
-  const { data: examination, isLoading, error } = useQuery({
+  const { 
+    data: examination,
+    isLoading,
+    error
+  } = useQuery<Examination>({
     queryKey: [`/api/examinations/${id}`],
-    queryFn: () => apiRequest("GET", `/api/examinations/${id}`).then(res => res.json()),
-    enabled: id > 0,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
-  // Mutation to evaluate an examination
-  const evaluateExaminationMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest("POST", `/api/examinations/${id}/evaluate`).then(res => res.json());
-    },
-    onSuccess: () => {
-      toast({
-        title: "Evaluasi berhasil",
-        description: "Ujian telah berhasil dievaluasi",
-      });
-      queryClient.invalidateQueries({ queryKey: [`/api/examinations/${id}`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/examinations"] });
-      setIsEvaluateDialogOpen(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Evaluasi gagal",
-        description: error.message || "Terjadi kesalahan saat mengevaluasi ujian",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Format date
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleString("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat("id-ID", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(date);
   };
 
-  // Calculate duration in minutes
-  const calculateDuration = (startTime: string | null, endTime: string | null) => {
-    if (!startTime || !endTime) return "-";
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-    const durationMs = end.getTime() - start.getTime();
-    const durationMinutes = Math.floor(durationMs / (1000 * 60));
-    return `${durationMinutes} menit`;
-  };
-
-  // Get status badge color
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return <Badge variant="outline" className="bg-gray-100">Belum dimulai</Badge>;
+        return <Badge variant="outline">Belum Dimulai</Badge>;
       case "in_progress":
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800">Sedang berlangsung</Badge>;
+        return <Badge variant="secondary">Sedang Berlangsung</Badge>;
       case "completed":
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Menunggu evaluasi</Badge>;
+        return <Badge variant="default">Selesai (Belum Dievaluasi)</Badge>;
       case "evaluated":
-        return <Badge variant="outline" className="bg-green-100 text-green-800">Selesai</Badge>;
+        return <Badge variant="success">Dievaluasi</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  // Render answer status icon
-  const renderAnswerStatus = (isCorrect: boolean | null) => {
-    if (isCorrect === null) return <HelpCircle className="h-4 w-4 text-gray-400" />;
-    return isCorrect ? 
-      <Check className="h-4 w-4 text-green-500" /> : 
-      <X className="h-4 w-4 text-red-500" />;
+  const getElapsedTime = (startTime: string | null, endTime: string | null) => {
+    if (!startTime) return "N/A";
+    
+    const start = new Date(startTime);
+    const end = endTime ? new Date(endTime) : new Date();
+    
+    const diffInMinutes = Math.floor((end.getTime() - start.getTime()) / (1000 * 60));
+    
+    const hours = Math.floor(diffInMinutes / 60);
+    const minutes = diffInMinutes % 60;
+    
+    return `${hours > 0 ? `${hours} jam ` : ""}${minutes} menit`;
+  };
+
+  const handleStartExam = async () => {
+    try {
+      const response = await fetch(`/api/examinations/${id}/start`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!response.ok) throw new Error("Gagal memulai ujian");
+      
+      toast({
+        title: "Ujian dimulai",
+        description: "Ujian berhasil dimulai.",
+      });
+      
+      // Refresh data
+      window.location.reload();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Gagal memulai ujian. Silakan coba lagi.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEvaluateExam = async () => {
+    try {
+      const response = await fetch(`/api/examinations/${id}/evaluate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!response.ok) throw new Error("Gagal evaluasi ujian");
+      
+      toast({
+        title: "Ujian dievaluasi",
+        description: "Ujian berhasil dievaluasi.",
+      });
+      
+      setEvaluateDialogOpen(false);
+      
+      // Refresh data
+      window.location.reload();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Gagal evaluasi ujian. Silakan coba lagi.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
     return (
       <AdminLayout>
-        <div className="flex justify-center items-center min-h-[60vh]">
+        <div className="flex items-center justify-center h-[calc(100vh-200px)]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </AdminLayout>
@@ -154,19 +183,11 @@ export default function ExaminationDetailPage() {
   if (error || !examination) {
     return (
       <AdminLayout>
-        <div className="container mx-auto py-8">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">Detail Ujian</h1>
-            <Button variant="outline" onClick={() => window.history.back()}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Kembali
-            </Button>
-          </div>
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-center text-gray-500">Ujian tidak ditemukan atau terjadi kesalahan saat memuat data.</p>
-            </CardContent>
-          </Card>
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)]">
+          <h2 className="text-2xl font-bold text-destructive mb-2">Data Tidak Ditemukan</h2>
+          <p className="text-muted-foreground">
+            Detail ujian tidak dapat ditemukan atau terjadi kesalahan.
+          </p>
         </div>
       </AdminLayout>
     );
@@ -174,265 +195,297 @@ export default function ExaminationDetailPage() {
 
   return (
     <AdminLayout>
-      <div className="container mx-auto py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Detail Ujian</h1>
-          <Button variant="outline" onClick={() => window.history.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Kembali
-          </Button>
-        </div>
-
-        {/* Basic information */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Informasi Ujian #{examination.id}</CardTitle>
-            <CardDescription>Informasi dasar mengenai ujian ini</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Status</h3>
-                  <div className="mt-1">{getStatusBadge(examination.status)}</div>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Peserta</h3>
-                  <p className="mt-1 text-sm">
-                    {examination.application?.asesi?.user?.fullName || "Tidak diketahui"}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {examination.application?.asesi?.user?.email || ""}
-                  </p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Template Ujian</h3>
-                  <p className="mt-1 text-sm">{examination.template?.name || "Tidak diketahui"}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Skema Sertifikasi</h3>
-                  <p className="mt-1 text-sm">{examination.template?.scheme?.name || "Tidak diketahui"}</p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Waktu Mulai</h3>
-                  <p className="mt-1 text-sm">{formatDate(examination.startTime)}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Waktu Selesai</h3>
-                  <p className="mt-1 text-sm">{formatDate(examination.endTime)}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Durasi Ujian</h3>
-                  <p className="mt-1 text-sm">
-                    {calculateDuration(examination.startTime, examination.endTime)}
-                  </p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Hasil</h3>
-                  <p className="mt-1 text-sm">
-                    {examination.score !== null 
-                      ? `${examination.score}% (${examination.passed ? 'Lulus' : 'Tidak Lulus'})` 
-                      : 'Belum dievaluasi'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Tabs for Questions and Results */}
-        <Tabs defaultValue="jawaban" className="mb-6">
-          <TabsList className="mb-4">
-            <TabsTrigger value="jawaban">Jawaban Peserta</TabsTrigger>
-            <TabsTrigger value="penilaian">Hasil Penilaian</TabsTrigger>
-          </TabsList>
-
-          {/* Questions Tab */}
-          <TabsContent value="jawaban">
-            <Card>
-              <CardHeader>
-                <CardTitle>Soal dan Jawaban</CardTitle>
-                <CardDescription>
-                  Detail soal dan jawaban yang diberikan oleh peserta
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {examination.questions && examination.questions.length > 0 ? (
-                  <div className="space-y-6">
-                    {examination.questions.map((q, index) => (
-                      <div key={q.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-medium">Soal #{index + 1}</h3>
-                          <div className="flex items-center">
-                            {renderAnswerStatus(q.isCorrect)}
-                          </div>
-                        </div>
-                        <p className="mb-4">{q.question?.text || "Pertanyaan tidak tersedia"}</p>
-                        
-                        {q.question?.options && (
-                          <div className="space-y-2 mb-4">
-                            <h4 className="text-sm font-medium text-gray-500">Pilihan Jawaban:</h4>
-                            <ul className="space-y-1 text-sm">
-                              {q.question.options.map((option, i) => (
-                                <li key={i} className="flex items-center">
-                                  <span className={`inline-flex items-center justify-center w-6 h-6 mr-2 rounded-full border ${
-                                    q.userAnswer === option 
-                                      ? 'bg-primary text-white border-primary' 
-                                      : 'bg-white text-gray-500 border-gray-300'
-                                  }`}>
-                                    {String.fromCharCode(65 + i)}
-                                  </span>
-                                  <span className={
-                                    q.question?.correctAnswer === option 
-                                      ? 'font-medium text-green-600' 
-                                      : ''
-                                  }>
-                                    {option}
-                                    {q.question?.correctAnswer === option && 
-                                      ' (Jawaban benar)'}
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-500">Jawaban Peserta:</h4>
-                          <p className="text-sm mt-1">
-                            {q.userAnswer || "Tidak menjawab"}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-gray-500">Belum ada soal atau jawaban</p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Assessment Tab */}
-          <TabsContent value="penilaian">
-            <Card>
-              <CardHeader>
-                <CardTitle>Hasil Penilaian</CardTitle>
-                <CardDescription>
-                  Ringkasan hasil penilaian ujian
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {examination.status === "evaluated" ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="border rounded-lg p-4 text-center">
-                        <h3 className="text-sm font-medium text-gray-500 mb-1">Total Soal</h3>
-                        <p className="text-xl font-semibold">{examination.totalQuestions}</p>
-                      </div>
-                      <div className="border rounded-lg p-4 text-center">
-                        <h3 className="text-sm font-medium text-gray-500 mb-1">Jawaban Benar</h3>
-                        <p className="text-xl font-semibold">{examination.correctAnswers}</p>
-                      </div>
-                      <div className="border rounded-lg p-4 text-center">
-                        <h3 className="text-sm font-medium text-gray-500 mb-1">Nilai Akhir</h3>
-                        <p className="text-xl font-semibold">{examination.score}%</p>
-                      </div>
-                    </div>
-                    
-                    <div className="border rounded-lg p-4 flex justify-between items-center">
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-500 mb-1">Status Kelulusan</h3>
-                        <p className={`text-lg font-semibold ${
-                          examination.passed ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {examination.passed ? 'LULUS' : 'TIDAK LULUS'}
-                        </p>
-                      </div>
-                      <Badge 
-                        variant="outline" 
-                        className={examination.passed 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                        }
-                      >
-                        {examination.passed ? 'LULUS' : 'TIDAK LULUS'}
-                      </Badge>
-                    </div>
-                    
-                    <div className="border rounded-lg p-4">
-                      <h3 className="text-sm font-medium text-gray-500 mb-1">Dievaluasi Oleh</h3>
-                      <p className="text-sm">Asesor ID: {examination.evaluatedBy || 'Tidak diketahui'}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Pada {formatDate(examination.evaluatedAt)}
-                      </p>
-                    </div>
-                  </div>
-                ) : examination.status === "completed" ? (
-                  <div className="text-center py-6">
-                    <p className="text-gray-500 mb-4">
-                      Ujian sudah selesai namun belum dievaluasi. Klik tombol di bawah untuk mengevaluasi ujian ini.
-                    </p>
-                    <Button 
-                      onClick={() => setIsEvaluateDialogOpen(true)}
-                      disabled={evaluateExaminationMutation.isPending}
-                    >
-                      {evaluateExaminationMutation.isPending && (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      )}
-                      Evaluasi Ujian
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <p className="text-gray-500">
-                      Ujian belum selesai. Penilaian akan tersedia setelah ujian selesai.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-      
-      {/* Evaluate confirmation dialog */}
-      <Dialog open={isEvaluateDialogOpen} onOpenChange={setIsEvaluateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Evaluasi Ujian</DialogTitle>
-            <DialogDescription>
-              Ujian akan dievaluasi secara otomatis berdasarkan jawaban yang benar.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-gray-500">
-              Setelah dievaluasi, hasil ujian akan ditetapkan dan tidak dapat diubah lagi.
-              Apakah Anda yakin ingin melanjutkan?
+      <div className="container mx-auto py-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Detail Ujian</h2>
+            <p className="text-muted-foreground">
+              Informasi detail dan evaluasi untuk ujian #{examination.id}
             </p>
           </div>
-          <div className="flex justify-end gap-3">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsEvaluateDialogOpen(false)}
-              disabled={evaluateExaminationMutation.isPending}
-            >
-              Batal
-            </Button>
-            <Button 
-              onClick={() => evaluateExaminationMutation.mutate()}
-              disabled={evaluateExaminationMutation.isPending}
-            >
-              {evaluateExaminationMutation.isPending && (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          
+          {examination.status === "pending" && (
+            <Button onClick={handleStartExam}>Mulai Ujian</Button>
+          )}
+          
+          {examination.status === "completed" && (
+            <Dialog open={evaluateDialogOpen} onOpenChange={setEvaluateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>Evaluasi Ujian</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Konfirmasi Evaluasi Ujian</DialogTitle>
+                  <DialogDescription>
+                    Tindakan ini akan mengevaluasi jawaban ujian secara otomatis. Pastikan semua data sudah benar.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setEvaluateDialogOpen(false)}>
+                    Batal
+                  </Button>
+                  <Button onClick={handleEvaluateExam}>
+                    Evaluasi Ujian
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informasi Ujian</CardTitle>
+              <CardDescription>Detail ujian dan status</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-medium">Status</p>
+                <div className="mt-1">{getStatusBadge(examination.status)}</div>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium">Template Ujian</p>
+                <p className="text-sm">{examination.template?.name || 'N/A'}</p>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium">Skema Sertifikasi</p>
+                <p className="text-sm">{examination.template?.scheme?.name || 'N/A'}</p>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium">Durasi Ujian</p>
+                <p className="text-sm">{examination.duration} menit</p>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium">Total Pertanyaan</p>
+                <p className="text-sm">{examination.totalQuestions}</p>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium">Dibuat Pada</p>
+                <p className="text-sm">{formatDate(examination.createdAt)}</p>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Peserta</CardTitle>
+              <CardDescription>Informasi peserta ujian</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-medium">Nama Peserta</p>
+                <p className="text-sm">{examination.application?.asesi?.user?.fullName || 'N/A'}</p>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium">Email</p>
+                <p className="text-sm">{examination.application?.asesi?.user?.email || 'N/A'}</p>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium">ID Aplikasi</p>
+                <p className="text-sm">{examination.applicationId}</p>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Pelaksanaan</CardTitle>
+              <CardDescription>Waktu dan hasil ujian</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-medium">Waktu Mulai</p>
+                <p className="text-sm">{formatDate(examination.startTime || "")}</p>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium">Waktu Selesai</p>
+                <p className="text-sm">{formatDate(examination.endTime || "")}</p>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium">Durasi Pengerjaan</p>
+                <p className="text-sm">
+                  {examination.startTime 
+                    ? getElapsedTime(examination.startTime, examination.endTime)
+                    : 'Belum dimulai'
+                  }
+                </p>
+              </div>
+              
+              {examination.status === "evaluated" && (
+                <>
+                  <div>
+                    <p className="text-sm font-medium">Jawaban Benar</p>
+                    <p className="text-sm">
+                      {examination.correctAnswers} dari {examination.totalQuestions}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm font-medium">Nilai</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold">{examination.score}</p>
+                      <Progress 
+                        value={examination.score || 0} 
+                        className="h-2 w-24" 
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm font-medium">Status Kelulusan</p>
+                    {examination.passed ? (
+                      <div className="flex items-center text-green-600">
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        <span className="text-sm">Lulus</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center text-red-600">
+                        <XCircle className="h-4 w-4 mr-1" />
+                        <span className="text-sm">Tidak Lulus</span>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
-              Ya, Evaluasi Sekarang
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {(examination.status === "completed" || examination.status === "evaluated") && (
+          <>
+            <h3 className="text-xl font-bold mt-8 mb-4">Hasil Ujian</h3>
+            
+            <Tabs defaultValue="summary" className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="summary">Ringkasan</TabsTrigger>
+                <TabsTrigger value="questions">Pertanyaan & Jawaban</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="summary">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Ringkasan Hasil</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {examination.status === "evaluated" ? (
+                      <div className="space-y-6">
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                          <div className="text-center p-4 bg-muted rounded-lg">
+                            <p className="text-sm font-medium">Total Pertanyaan</p>
+                            <p className="text-3xl font-bold">{examination.totalQuestions}</p>
+                          </div>
+                          
+                          <div className="text-center p-4 bg-muted rounded-lg">
+                            <p className="text-sm font-medium">Jawaban Benar</p>
+                            <p className="text-3xl font-bold text-green-600">{examination.correctAnswers}</p>
+                          </div>
+                          
+                          <div className="text-center p-4 bg-muted rounded-lg">
+                            <p className="text-sm font-medium">Nilai</p>
+                            <p className="text-3xl font-bold">{examination.score}%</p>
+                          </div>
+                          
+                          <div className="text-center p-4 bg-muted rounded-lg">
+                            <p className="text-sm font-medium">Status</p>
+                            {examination.passed ? (
+                              <p className="text-xl font-bold text-green-600">LULUS</p>
+                            ) : (
+                              <p className="text-xl font-bold text-red-600">TIDAK LULUS</p>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <p className="font-medium mb-2">Evaluasi Jawaban</p>
+                          <Progress 
+                            value={
+                              examination.correctAnswers 
+                                ? (examination.correctAnswers / examination.totalQuestions) * 100
+                                : 0
+                            } 
+                            className="h-4" 
+                          />
+                          <div className="flex justify-between text-sm mt-1">
+                            <span>0%</span>
+                            <span>100%</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">
+                          Ujian belum dievaluasi. Klik tombol "Evaluasi Ujian" untuk mengevaluasi jawaban.
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="questions">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Pertanyaan & Jawaban</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {examination.questions?.length ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-12">No.</TableHead>
+                            <TableHead>Pertanyaan</TableHead>
+                            <TableHead>Jawaban Peserta</TableHead>
+                            <TableHead>Jawaban Benar</TableHead>
+                            <TableHead className="w-24 text-center">Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {examination.questions.map((item, index) => (
+                            <TableRow key={item.id}>
+                              <TableCell className="font-medium">{index + 1}</TableCell>
+                              <TableCell>{item.question?.text || 'N/A'}</TableCell>
+                              <TableCell>{item.userAnswer || 'Tidak Menjawab'}</TableCell>
+                              <TableCell>{item.question?.correctAnswer || 'N/A'}</TableCell>
+                              <TableCell className="text-center">
+                                {item.isCorrect === true ? (
+                                  <CheckCircle className="h-5 w-5 mx-auto text-green-600" />
+                                ) : item.isCorrect === false ? (
+                                  <XCircle className="h-5 w-5 mx-auto text-red-600" />
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">
+                          {examination.status === "evaluated" 
+                            ? "Tidak ada data pertanyaan yang tersedia."
+                            : "Ujian belum dievaluasi. Klik tombol 'Evaluasi Ujian' untuk melihat pertanyaan dan jawaban."
+                          }
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </>
+        )}
+      </div>
     </AdminLayout>
   );
 }

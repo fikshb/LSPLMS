@@ -1,26 +1,21 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusIcon, Trash2Icon, EditIcon, ListIcon, ClipboardCheckIcon, UserIcon } from "lucide-react";
-import { Loader2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-// Impor AdminLayout yang sudah dibuat
-import AdminLayout from "@/components/admin-layout";
+import { Loader2, Search, Plus, Eye, Play, Check } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
-// Type definitions
+import AdminLayout from "@/components/admin-layout";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { queryClient } from "@/lib/queryClient";
+
 type Examination = {
   id: number;
   templateId: number;
@@ -78,314 +73,417 @@ type CertificationApplication = {
   };
 };
 
-// Schema for examination form validation
-const examinationFormSchema = z.object({
-  templateId: z.coerce.number().min(1, "Template ujian harus dipilih"),
-  applicationId: z.coerce.number().min(1, "Aplikasi sertifikasi harus dipilih"),
-});
-
 export default function ExaminationsPage() {
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<string | undefined>(undefined);
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
-
-  // Form setup for adding examinations
-  const form = useForm<z.infer<typeof examinationFormSchema>>({
-    resolver: zodResolver(examinationFormSchema),
-    defaultValues: {
-      templateId: 0,
-      applicationId: 0,
-    },
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newExamination, setNewExamination] = useState({
+    templateId: "",
+    applicationId: "",
   });
 
-  // Query to fetch all examinations
-  const { data: examinations = [], isLoading: isLoadingExaminations } = useQuery({
-    queryKey: ["/api/examinations", selectedStatus],
-    queryFn: () => {
-      let url = "/api/examinations";
-      if (selectedStatus) {
-        url += `?status=${selectedStatus}`;
-      }
-      return apiRequest("GET", url).then(res => res.json());
-    },
+  // Fetch all examinations
+  const { 
+    data: examinations,
+    isLoading: isLoadingExaminations,
+    error: examinationsError,
+  } = useQuery<Examination[]>({
+    queryKey: ["/api/examinations", { random: Math.random() }],
+    retry: false,
   });
 
-  // Query to fetch all examination templates
-  const { data: templates = [] } = useQuery({
+  // Fetch templates for creating new examinations
+  const {
+    data: templates,
+    isLoading: isLoadingTemplates,
+  } = useQuery<ExaminationTemplate[]>({
     queryKey: ["/api/examination-templates"],
-    queryFn: () => apiRequest("GET", "/api/examination-templates").then(res => res.json()),
+    retry: false,
+  });
+  
+  // Fetch applications for creating new examinations
+  const {
+    data: applications,
+    isLoading: isLoadingApplications,
+  } = useQuery<CertificationApplication[]>({
+    queryKey: ["/api/applications"],
+    retry: false,
   });
 
-  // Query to fetch eligible certification applications
-  const { data: applications = [] } = useQuery({
-    queryKey: ["/api/certification-applications/eligible"],
-    queryFn: () => apiRequest("GET", "/api/certification-applications/eligible").then(res => res.json()),
-  });
-
-  // Mutation to create a new examination
+  // Create examination mutation
   const createExaminationMutation = useMutation({
-    mutationFn: async (values: z.infer<typeof examinationFormSchema>) => {
-      return apiRequest("POST", "/api/examinations", values).then(res => res.json());
+    mutationFn: async (data: { templateId: number, applicationId: number }) => {
+      const res = await apiRequest("POST", "/api/examinations", data);
+      return await res.json();
     },
     onSuccess: () => {
       toast({
-        title: "Ujian berhasil dibuat",
-        description: "Ujian baru telah berhasil dibuat dan siap digunakan",
+        title: "Sukses",
+        description: "Ujian baru berhasil dibuat",
       });
+      setIsCreateDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["/api/examinations"] });
-      setIsAddDialogOpen(false);
-      form.reset();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
-        title: "Gagal membuat ujian",
-        description: error.message || "Terjadi kesalahan saat membuat ujian",
+        title: "Error",
+        description: "Gagal membuat ujian baru: " + error.message,
         variant: "destructive",
       });
     },
   });
 
-  // Function to handle form submission for adding an examination
-  const onSubmitAdd = (values: z.infer<typeof examinationFormSchema>) => {
-    createExaminationMutation.mutate(values);
-  };
+  // Evaluate examination mutation
+  const evaluateExaminationMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("POST", `/api/examinations/${id}/evaluate`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Sukses",
+        description: "Ujian berhasil dievaluasi",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/examinations"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: "Gagal mengevaluasi ujian: " + error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
-  // Function to format date
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleString("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+  // Start examination mutation
+  const startExaminationMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("POST", `/api/examinations/${id}/start`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Sukses",
+        description: "Ujian berhasil dimulai",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/examinations"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: "Gagal memulai ujian: " + error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateExamination = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newExamination.templateId || !newExamination.applicationId) {
+      toast({
+        title: "Validasi Gagal",
+        description: "Semua field wajib diisi",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createExaminationMutation.mutate({
+      templateId: parseInt(newExamination.templateId),
+      applicationId: parseInt(newExamination.applicationId),
     });
   };
 
-  // Function to get status badge color
+  const handleStartExamination = (id: number) => {
+    startExaminationMutation.mutate(id);
+  };
+
+  const handleEvaluateExamination = (id: number) => {
+    evaluateExaminationMutation.mutate(id);
+  };
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return "-";
+    return new Date(dateStr).toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return <Badge variant="outline" className="bg-gray-100">Belum dimulai</Badge>;
+        return <Badge variant="outline">Belum Dimulai</Badge>;
       case "in_progress":
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800">Sedang berlangsung</Badge>;
+        return <Badge variant="secondary">Sedang Berlangsung</Badge>;
       case "completed":
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Menunggu evaluasi</Badge>;
+        return <Badge>Selesai (Belum Dievaluasi)</Badge>;
       case "evaluated":
-        return <Badge variant="outline" className="bg-green-100 text-green-800">Selesai</Badge>;
+        return <Badge variant="success">Dievaluasi</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  // Render the page
+  const filteredExaminations = examinations
+    ? examinations.filter((examination) => {
+        const matchesSearch =
+          examination.template?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          examination.application?.asesi?.user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          String(examination.id).includes(searchTerm);
+          
+        const matchesStatus = selectedStatus === "all" || examination.status === selectedStatus;
+        
+        return matchesSearch && matchesStatus;
+      })
+    : [];
+
+  if (isLoadingExaminations) {
+    return (
+      <AdminLayout>
+        <div className="flex justify-center items-center h-[calc(100vh-200px)]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (examinationsError) {
+    return (
+      <AdminLayout>
+        <div className="container mx-auto py-6">
+          <h2 className="text-3xl font-bold tracking-tight">Manajemen Ujian</h2>
+          <p className="text-destructive mt-4">
+            Terjadi kesalahan saat memuat data ujian. Silakan coba lagi nanti.
+          </p>
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
-      <div className="container mx-auto py-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Manajemen Ujian</h1>
-          <Button onClick={() => {
-            form.reset();
-            setIsAddDialogOpen(true);
-          }}>
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Buat Ujian Baru
-          </Button>
-        </div>
-
-        <div className="flex items-center gap-4 mb-6">
-          <Select
-            value={selectedStatus || "all"}
-            onValueChange={(value) => setSelectedStatus(value === "all" ? undefined : value)}
-          >
-            <SelectTrigger className="w-[250px]">
-              <SelectValue placeholder="Filter berdasarkan Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Status</SelectItem>
-              <SelectItem value="pending">Belum Dimulai</SelectItem>
-              <SelectItem value="in_progress">Sedang Berlangsung</SelectItem>
-              <SelectItem value="completed">Menunggu Evaluasi</SelectItem>
-              <SelectItem value="evaluated">Selesai</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {isLoadingExaminations ? (
-          <div className="flex justify-center items-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="container mx-auto py-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Manajemen Ujian</h2>
+            <p className="text-muted-foreground">
+              Kelola ujian sertifikasi untuk semua peserta
+            </p>
           </div>
-        ) : (
-          <div className="bg-white shadow-md rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Peserta</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Template</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Mulai</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Selesai</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nilai</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {examinations?.length > 0 ? (
-                    examinations.map((examination: Examination) => (
-                      <tr key={examination.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{examination.id}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {examination.application?.asesi?.user?.fullName || "-"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {examination.template?.name || "-"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {getStatusBadge(examination.status)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatDate(examination.startTime)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatDate(examination.endTime)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {examination.score !== null ? `${examination.score}%` : "-"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={examination.status !== "completed"}
-                              onClick={() => window.location.href = `/admin/examinations/${examination.id}`}
-                            >
-                              <ClipboardCheckIcon className="h-4 w-4 mr-1" />
-                              Evaluasi
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => window.location.href = `/admin/examinations/${examination.id}`}
-                            >
-                              <ListIcon className="h-4 w-4 mr-1" />
-                              Detail
-                            </Button>
+          
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Buat Ujian Baru
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Buat Ujian Baru</DialogTitle>
+                <DialogDescription>
+                  Pilih template ujian dan peserta untuk membuat ujian baru.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <form onSubmit={handleCreateExamination}>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <label htmlFor="templateId" className="text-sm font-medium">
+                      Template Ujian
+                    </label>
+                    <Select
+                      value={newExamination.templateId}
+                      onValueChange={(value) => 
+                        setNewExamination({...newExamination, templateId: value})
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih template ujian" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {isLoadingTemplates ? (
+                          <div className="flex justify-center p-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
                           </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
-                        Tidak ada ujian yang ditemukan
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Dialog for adding a new examination */}
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Buat Ujian Baru</DialogTitle>
-              <DialogDescription>
-                Pilih template ujian dan peserta untuk membuat ujian baru.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmitAdd)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="templateId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Template Ujian</FormLabel>
-                      <Select
-                        value={field.value?.toString() || "0"}
-                        onValueChange={(value) => field.onChange(parseInt(value))}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih Template Ujian" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {templates?.map((template: ExaminationTemplate) => (
+                        ) : templates?.length === 0 ? (
+                          <SelectItem value="no-templates" disabled>
+                            Tidak ada template tersedia
+                          </SelectItem>
+                        ) : (
+                          templates?.map((template: ExaminationTemplate) => (
                             <SelectItem key={template.id} value={template.id.toString()}>
-                              {template.name} ({template.scheme?.name || ""})
+                              {template.name}
                             </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Template berisi konfigurasi ujian yang akan digunakan
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="applicationId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Aplikasi Sertifikasi</FormLabel>
-                      <Select
-                        value={field.value?.toString() || "0"}
-                        onValueChange={(value) => field.onChange(parseInt(value))}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih Aplikasi Sertifikasi" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {applications?.map((application: CertificationApplication) => (
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="applicationId" className="text-sm font-medium">
+                      Aplikasi Sertifikasi
+                    </label>
+                    <Select
+                      value={newExamination.applicationId}
+                      onValueChange={(value) => 
+                        setNewExamination({...newExamination, applicationId: value})
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih aplikasi sertifikasi" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {isLoadingApplications ? (
+                          <div className="flex justify-center p-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          </div>
+                        ) : applications?.length === 0 ? (
+                          <SelectItem value="no-applications" disabled>
+                            Tidak ada aplikasi tersedia
+                          </SelectItem>
+                        ) : (
+                          applications?.map((application: CertificationApplication) => (
                             <SelectItem key={application.id} value={application.id.toString()}>
-                              {application.asesi?.user?.fullName || "Unnamed"} - {application.scheme?.name || ""}
+                              {application.asesi?.user?.fullName || `Aplikasi #${application.id}`} - {application.scheme?.name || 'N/A'}
                             </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Pilih peserta yang akan mengikuti ujian ini
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
                 <DialogFooter>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setIsAddDialogOpen(false)}
-                  >
+                  <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                     Batal
                   </Button>
-                  <Button 
-                    type="submit"
-                    disabled={createExaminationMutation.isPending}
-                  >
-                    {createExaminationMutation.isPending && (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Button type="submit" disabled={createExaminationMutation.isPending}>
+                    {createExaminationMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Membuat...
+                      </>
+                    ) : (
+                      "Buat Ujian"
                     )}
-                    Buat Ujian
                   </Button>
                 </DialogFooter>
               </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
+        
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle>Daftar Ujian</CardTitle>
+            <CardDescription>
+              Kelola semua ujian sertifikasi
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <div className="relative w-full md:w-1/3">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Cari berdasarkan nama, nomor, dll..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="w-full md:w-[200px]">
+                  <SelectValue placeholder="Filter status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="pending">Belum Dimulai</SelectItem>
+                  <SelectItem value="in_progress">Sedang Berlangsung</SelectItem>
+                  <SelectItem value="completed">Selesai (Menunggu Evaluasi)</SelectItem>
+                  <SelectItem value="evaluated">Dievaluasi</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {filteredExaminations.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Tidak ada data ujian yang ditemukan.</p>
+              </div>
+            ) : (
+              <div className="rounded-md border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">ID</TableHead>
+                      <TableHead>Template Ujian</TableHead>
+                      <TableHead>Peserta</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Tanggal Dibuat</TableHead>
+                      <TableHead>Nilai</TableHead>
+                      <TableHead className="text-right">Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredExaminations.map((examination: Examination) => (
+                      <TableRow key={examination.id}>
+                        <TableCell className="font-medium">{examination.id}</TableCell>
+                        <TableCell>{examination.template?.name || 'N/A'}</TableCell>
+                        <TableCell>
+                          {examination.application?.asesi?.user?.fullName || `Peserta #${examination.applicationId}`}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(examination.status)}</TableCell>
+                        <TableCell>{formatDate(examination.createdAt)}</TableCell>
+                        <TableCell>
+                          {examination.score !== null ? `${examination.score}%` : "-"}
+                        </TableCell>
+                        <TableCell className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setLocation(`/admin/examinations/${examination.id}`)}
+                            title="Lihat Detail"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          
+                          {examination.status === "pending" && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleStartExamination(examination.id)}
+                              title="Mulai Ujian"
+                            >
+                              <Play className="h-4 w-4" />
+                            </Button>
+                          )}
+                          
+                          {examination.status === "completed" && (
+                            <Button
+                              variant="default"
+                              size="icon"
+                              onClick={() => handleEvaluateExamination(examination.id)}
+                              title="Evaluasi Ujian"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   );
