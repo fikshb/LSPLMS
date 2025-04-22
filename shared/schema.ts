@@ -22,6 +22,16 @@ export const assessmentTypeEnum = pgEnum('assessment_type', [
   'Sertifikasi', 'Sertifikasi Ulang', 'Pengakuan Kompetensi Terkini (PKT)', 'Rekognisi Pembelajaran Lampau (RPL)'
 ]);
 
+// Enum untuk difficulty level pada soal
+export const difficultyLevelEnum = pgEnum('difficulty_level', [
+  'mudah', 'sedang', 'sulit'
+]);
+
+// Enum untuk question type
+export const questionTypeEnum = pgEnum('question_type', [
+  'pilihan_ganda', 'benar_salah', 'essay'
+]);
+
 // Tabel pengguna
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -326,6 +336,169 @@ export const insertDocumentSchema = createInsertSchema(documents).omit({
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type Document = typeof documents.$inferSelect;
 
+// Tabel bank soal (questions bank)
+export const questions = pgTable("questions", {
+  id: serial("id").primaryKey(),
+  schemeId: integer("scheme_id").references(() => certificationSchemes.id).notNull(),
+  unitId: integer("unit_id").references(() => competencyUnits.id),
+  question: text("question").notNull(),
+  questionType: questionTypeEnum("question_type").default("pilihan_ganda").notNull(),
+  options: jsonb("options"), // Array opsi jawaban untuk pilihan ganda [{value: "A", text: "Jawaban A"}, ...]
+  correctAnswer: text("correct_answer").notNull(), // Untuk pilihan ganda bisa "A", "B", etc
+  explanation: text("explanation"), // Penjelasan jawaban benar
+  difficultyLevel: difficultyLevelEnum("difficulty_level").default("sedang"),
+  tags: text("tags"), // Tag kategori, dipisahkan dengan koma
+  points: integer("points").default(1), // Nilai poin jika benar
+  active: boolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdBy: integer("created_by").references(() => users.id),
+});
+
+export const questionsRelations = relations(questions, ({ one, many }) => ({
+  scheme: one(certificationSchemes, {
+    fields: [questions.schemeId],
+    references: [certificationSchemes.id],
+  }),
+  unit: one(competencyUnits, {
+    fields: [questions.unitId],
+    references: [competencyUnits.id],
+  }),
+  creator: one(users, {
+    fields: [questions.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const insertQuestionSchema = createInsertSchema(questions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
+export type Question = typeof questions.$inferSelect;
+
+// Tabel template ujian
+export const examinationTemplates = pgTable("examination_templates", {
+  id: serial("id").primaryKey(),
+  schemeId: integer("scheme_id").references(() => certificationSchemes.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  duration: integer("duration").default(60), // Durasi ujian dalam menit
+  totalQuestions: integer("total_questions").default(20),
+  passingScore: integer("passing_score").default(70), // Nilai kelulusan (persentase)
+  randomizeQuestions: boolean("randomize_questions").default(true),
+  active: boolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdBy: integer("created_by").references(() => users.id),
+});
+
+export const examinationTemplatesRelations = relations(examinationTemplates, ({ one }) => ({
+  scheme: one(certificationSchemes, {
+    fields: [examinationTemplates.schemeId],
+    references: [certificationSchemes.id],
+  }),
+  creator: one(users, {
+    fields: [examinationTemplates.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const insertExaminationTemplateSchema = createInsertSchema(examinationTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertExaminationTemplate = z.infer<typeof insertExaminationTemplateSchema>;
+export type ExaminationTemplate = typeof examinationTemplates.$inferSelect;
+
+// Tabel ujian peserta
+export const examinations = pgTable("examinations", {
+  id: serial("id").primaryKey(),
+  templateId: integer("template_id").references(() => examinationTemplates.id).notNull(),
+  applicationId: integer("application_id").references(() => certificationApplications.id).notNull(),
+  startTime: timestamp("start_time"),
+  endTime: timestamp("end_time"),
+  duration: integer("duration"), // Durasi aktual dalam menit
+  totalQuestions: integer("total_questions"),
+  correctAnswers: integer("correct_answers"),
+  score: integer("score"), // Nilai persentase (0-100)
+  passed: boolean("passed"),
+  status: text("status").default("pending"), // pending, in_progress, completed, evaluated
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  evaluatedBy: integer("evaluated_by").references(() => users.id),
+  evaluatedAt: timestamp("evaluated_at"),
+});
+
+export const examinationsRelations = relations(examinations, ({ one }) => ({
+  template: one(examinationTemplates, {
+    fields: [examinations.templateId],
+    references: [examinationTemplates.id],
+  }),
+  application: one(certificationApplications, {
+    fields: [examinations.applicationId],
+    references: [certificationApplications.id],
+    relationName: "applicationExaminations",
+  }),
+  evaluator: one(users, {
+    fields: [examinations.evaluatedBy],
+    references: [users.id],
+  }),
+}));
+
+export const insertExaminationSchema = createInsertSchema(examinations).omit({
+  id: true,
+  startTime: true,
+  endTime: true,
+  correctAnswers: true,
+  score: true,
+  passed: true,
+  createdAt: true,
+  updatedAt: true,
+  evaluatedBy: true,
+  evaluatedAt: true,
+});
+
+export type InsertExamination = z.infer<typeof insertExaminationSchema>;
+export type Examination = typeof examinations.$inferSelect;
+
+// Tabel relasi ujian dengan pertanyaan
+export const examinationQuestions = pgTable("examination_questions", {
+  id: serial("id").primaryKey(),
+  examinationId: integer("examination_id").references(() => examinations.id).notNull(),
+  questionId: integer("question_id").references(() => questions.id).notNull(),
+  order: integer("order").default(0),
+  userAnswer: text("user_answer"),
+  isCorrect: boolean("is_correct"),
+  answeredAt: timestamp("answered_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const examinationQuestionsRelations = relations(examinationQuestions, ({ one }) => ({
+  examination: one(examinations, {
+    fields: [examinationQuestions.examinationId],
+    references: [examinations.id],
+  }),
+  question: one(questions, {
+    fields: [examinationQuestions.questionId],
+    references: [questions.id],
+  }),
+}));
+
+export const insertExaminationQuestionSchema = createInsertSchema(examinationQuestions).omit({
+  id: true,
+  isCorrect: true,
+  answeredAt: true,
+  createdAt: true,
+});
+
+export type InsertExaminationQuestion = z.infer<typeof insertExaminationQuestionSchema>;
+export type ExaminationQuestion = typeof examinationQuestions.$inferSelect;
+
 // Tabel provinsi
 export const provinces = pgTable("provinces", {
   id: serial("id").primaryKey(),
@@ -462,4 +635,5 @@ export const certificationApplicationsRelations = relations(certificationApplica
     references: [assessments.applicationId],
   }),
   documents: many(documents),
+  examinations: many(examinations, { relationName: "applicationExaminations" }),
 }));
