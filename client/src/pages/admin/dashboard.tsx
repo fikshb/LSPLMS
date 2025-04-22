@@ -989,7 +989,10 @@ export default function AdminDashboard() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem 
-                  onClick={() => useAuth().logoutMutation.mutate()}
+                  onClick={() => { 
+                    const { logoutMutation } = useAuth();
+                    logoutMutation.mutate();
+                  }}
                   className="cursor-pointer text-red-600"
                 >
                   <LogOut className="mr-2 h-4 w-4" /> Keluar
