@@ -12,7 +12,11 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  // Tambahkan random query parameter untuk mencegah caching
+  const randomParam = `_=${Date.now()}`;
+  const urlWithParam = url.includes('?') ? `${url}&${randomParam}` : `${url}?${randomParam}`;
+  
+  const res = await fetch(urlWithParam, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -29,7 +33,12 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    const url = queryKey[0] as string;
+    // Tambahkan random query parameter untuk mencegah caching
+    const randomParam = `_=${Date.now()}`;
+    const urlWithParam = url.includes('?') ? `${url}&${randomParam}` : `${url}?${randomParam}`;
+    
+    const res = await fetch(urlWithParam, {
       credentials: "include",
     });
 
