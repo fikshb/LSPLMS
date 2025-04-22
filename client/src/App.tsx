@@ -31,6 +31,7 @@ import AsesorDashboard from "@/pages/asesor/dashboard";
 import AsesiDashboard from "@/pages/asesi/dashboard";
 import QuestionsPage from "@/pages/admin/questions";
 import ExaminationTemplatesPage from "@/pages/admin/examination-templates";
+import ExaminationsPage from "@/pages/admin/examinations";
 
 function Router() {
   return (
@@ -39,6 +40,7 @@ function Router() {
       <ProtectedRoute path="/admin/dashboard" component={AdminDashboard} roles={["admin"]} />
       <ProtectedRoute path="/admin/questions" component={QuestionsPage} roles={["admin"]} />
       <ProtectedRoute path="/admin/examination-templates" component={ExaminationTemplatesPage} roles={["admin"]} />
+      <ProtectedRoute path="/admin/examinations" component={ExaminationsPage} roles={["admin"]} />
       <ProtectedRoute path="/asesor/dashboard" component={AsesorDashboard} roles={["asesor"]} />
       <ProtectedRoute path="/asesi/dashboard" component={AsesiDashboard} roles={["asesi"]} />
       
