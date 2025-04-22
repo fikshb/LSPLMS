@@ -82,7 +82,7 @@ const AdminSidebar = () => {
   ];
 
   return (
-    <div className="w-64 h-screen sticky top-0 border-r bg-white flex flex-col">
+    <div className="w-64 h-screen border-r bg-white flex flex-col">
       <div className="p-4 border-b">
         <div className="text-xl font-bold text-primary">LSP WKN</div>
         <div className="text-sm text-gray-500">Panel Admin</div>
