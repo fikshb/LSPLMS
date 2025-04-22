@@ -230,7 +230,7 @@ export default function ExaminationTemplatesPage() {
             <SelectValue placeholder="Filter berdasarkan Skema" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Semua Skema</SelectItem>
+            <SelectItem value="all">Semua Skema</SelectItem>
             {schemes?.map((scheme: Scheme) => (
               <SelectItem key={scheme.id} value={scheme.id.toString()}>
                 {scheme.name}

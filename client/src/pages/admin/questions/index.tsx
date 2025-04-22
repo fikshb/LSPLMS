@@ -290,7 +290,7 @@ export default function QuestionsManagementPage() {
             <SelectValue placeholder="Pilih Skema Sertifikasi" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Semua Skema</SelectItem>
+            <SelectItem value="all">Semua Skema</SelectItem>
             {schemes?.map((scheme: Scheme) => (
               <SelectItem key={scheme.id} value={scheme.id.toString()}>
                 {scheme.name}
@@ -308,7 +308,7 @@ export default function QuestionsManagementPage() {
             <SelectValue placeholder="Pilih Unit Kompetensi" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Semua Unit</SelectItem>
+            <SelectItem value="all">Semua Unit</SelectItem>
             {competencyUnits?.map((unit: CompetencyUnit) => (
               <SelectItem key={unit.id} value={unit.id.toString()}>
                 {unit.code} - {unit.title}
@@ -455,7 +455,7 @@ export default function QuestionsManagementPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Tidak terkait unit</SelectItem>
+                          <SelectItem value="none">Tidak terkait unit</SelectItem>
                           {competencyUnits?.map((unit: CompetencyUnit) => (
                             <SelectItem key={unit.id} value={unit.id.toString()}>
                               {unit.code} - {unit.title}
@@ -772,7 +772,7 @@ export default function QuestionsManagementPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Tidak terkait unit</SelectItem>
+                          <SelectItem value="none">Tidak terkait unit</SelectItem>
                           {competencyUnits?.map((unit: CompetencyUnit) => (
                             <SelectItem key={unit.id} value={unit.id.toString()}>
                               {unit.code} - {unit.title}
