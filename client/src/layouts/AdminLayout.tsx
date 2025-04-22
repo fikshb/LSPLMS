@@ -16,13 +16,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   return (
-    <>
-      <div className="fixed left-0 top-0 h-screen z-10">
+    <div className="flex h-screen">
+      <div className="w-64 h-screen fixed left-0 top-0 overflow-y-auto">
         <AdminSidebar />
       </div>
-      <div className="min-h-screen bg-gray-50 pl-64">
-        <main>{children}</main>
+      <div className="pl-64 flex-1 overflow-y-auto bg-gray-50">
+        <main className="h-full">{children}</main>
       </div>
-    </>
+    </div>
   );
 }
