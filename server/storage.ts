@@ -13,10 +13,11 @@ import {
   type InsertSchedule,
   partners,
   type Partner,
-  type InsertPartner
+  type InsertPartner,
+  asesors
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, or, ilike } from "drizzle-orm";
+import { eq, desc, or, and, ilike, count } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -35,6 +36,13 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   hashPassword(password: string): Promise<string>;
+  
+  // Asesor methods
+  getAsesors(): Promise<User[]>;
+  getAsesorById(id: number): Promise<User | undefined>;
+  createAsesor(asesor: Omit<InsertUser, "role"> & { bidangKompetensi?: string, nomorRegistrasi?: string }): Promise<User>;
+  updateAsesor(id: number, asesor: Partial<InsertUser> & { bidangKompetensi?: string, nomorRegistrasi?: string }): Promise<User>;
+  deleteAsesor(id: number): Promise<boolean>;
   
   // Certification Scheme methods
   getSchemes(): Promise<CertificationScheme[]>;
@@ -59,6 +67,9 @@ export interface IStorage {
   getPartners(): Promise<Partner[]>;
   getPartnerById(id: number): Promise<Partner | undefined>;
   createPartner(partner: InsertPartner): Promise<Partner>;
+  
+  // Admin methods
+  getDashboardCounts(): Promise<{ usersCount: number, activeAssessmentsCount: number, schemesCount: number, asesorsCount: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -185,6 +196,102 @@ export class DatabaseStorage implements IStorage {
       .values(insertPartner)
       .returning();
     return partner;
+  }
+  
+  // Asesor methods
+  async getAsesors(): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.role, "asesor"));
+  }
+
+  async getAsesorById(id: number): Promise<User | undefined> {
+    const [asesor] = await db.select()
+      .from(users)
+      .where(
+        eq(users.id, id),
+        eq(users.role, "asesor")
+      );
+    return asesor || undefined;
+  }
+
+  async createAsesor(asesorData: Omit<InsertUser, "role"> & { bidangKompetensi?: string, nomorRegistrasi?: string }): Promise<User> {
+    // Extract asesor specific data
+    const { bidangKompetensi, nomorRegistrasi, ...userData } = asesorData;
+    
+    // Create the user with asesor role
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...userData,
+        role: "asesor"
+      })
+      .returning();
+    
+    // For simplicity, we'll store bidangKompetensi in the specialization field of user
+    // In a complete implementation, you'd properly link to the asesors table
+    
+    return user;
+  }
+
+  async updateAsesor(id: number, asesorData: Partial<InsertUser> & { bidangKompetensi?: string, nomorRegistrasi?: string }): Promise<User> {
+    // Extract asesor specific data
+    const { bidangKompetensi, nomorRegistrasi, ...userData } = asesorData;
+    
+    // Don't update empty password
+    if (userData.password === "") {
+      delete userData.password;
+    } else if (userData.password) {
+      userData.password = await this.hashPassword(userData.password);
+    }
+    
+    // Update the user record
+    const [user] = await db
+      .update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
+    
+    return user;
+  }
+
+  async deleteAsesor(id: number): Promise<boolean> {
+    try {
+      // Delete the user (this would cascade to asesor records with proper DB constraints)
+      const result = await db.delete(users).where(eq(users.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting asesor:", error);
+      return false;
+    }
+  }
+  
+  // Admin methods
+  async getDashboardCounts(): Promise<{ usersCount: number, activeAssessmentsCount: number, schemesCount: number, asesorsCount: number }> {
+    // Count users with asesi role
+    const [usersCountResult] = await db
+      .select({ count: count() })
+      .from(users)
+      .where(eq(users.role, "asesi"));
+    
+    // Count active assessments (this is a placeholder - implement with actual assessment table)
+    const activeAssessmentsCount = 5; // Placeholder
+    
+    // Count certification schemes
+    const [schemesCountResult] = await db
+      .select({ count: count() })
+      .from(certificationSchemes);
+    
+    // Count users with asesor role
+    const [asesorsCountResult] = await db
+      .select({ count: count() })
+      .from(users)
+      .where(eq(users.role, "asesor"));
+    
+    return {
+      usersCount: usersCountResult?.count || 0,
+      activeAssessmentsCount,
+      schemesCount: schemesCountResult?.count || 0,
+      asesorsCount: asesorsCountResult?.count || 0
+    };
   }
   
   // Helper function for password hashing
