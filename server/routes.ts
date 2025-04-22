@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { setupAuth } from "./auth";
+import { insertCertificationSchemeSchema } from "@shared/schema";
+import { desc, eq, or, ilike, count } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up auth with Passport
@@ -201,6 +203,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       res.status(500).json({ message: "Failed to delete asesor" });
+    }
+  });
+
+  // Admin - Manage Certification Schemes
+  
+  // Get all schemes (admin view - shows all data including inactive)
+  app.get(`${apiPrefix}/admin/schemes`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const schemes = await storage.getSchemes();
+      res.json(schemes);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch schemes" });
+    }
+  });
+  
+  // Get scheme by ID
+  app.get(`${apiPrefix}/admin/schemes/:id`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
+      const scheme = await storage.getSchemeById(id);
+      
+      if (!scheme) {
+        return res.status(404).json({ message: "Skema tidak ditemukan" });
+      }
+      
+      res.json(scheme);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch scheme" });
+    }
+  });
+  
+  // Create a new scheme
+  app.post(`${apiPrefix}/admin/schemes`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      // Validasi input menggunakan insertCertificationSchemeSchema dari schema.ts
+      const schemeData = insertCertificationSchemeSchema.parse(req.body);
+      
+      // Generate slug dari nama jika tidak ada
+      if (!schemeData.slug) {
+        schemeData.slug = schemeData.name
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^\w\-]+/g, '');
+      }
+      
+      const scheme = await storage.createScheme(schemeData);
+      res.status(201).json(scheme);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Validasi gagal", errors: error.errors });
+      } else {
+        console.error(error);
+        res.status(500).json({ message: "Failed to create scheme" });
+      }
+    }
+  });
+  
+  // Update an existing scheme
+  app.patch(`${apiPrefix}/admin/schemes/:id`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
+      // Cek apakah skema ada
+      const existingScheme = await storage.getSchemeById(id);
+      if (!existingScheme) {
+        return res.status(404).json({ message: "Skema tidak ditemukan" });
+      }
+      
+      // Validasi body request dengan partial skema
+      const updateData = insertCertificationSchemeSchema.partial().parse(req.body);
+      
+      // Update scheme
+      const updatedScheme = await storage.updateScheme(id, updateData);
+      res.json(updatedScheme);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Validasi gagal", errors: error.errors });
+      } else {
+        console.error(error);
+        res.status(500).json({ message: "Failed to update scheme" });
+      }
+    }
+  });
+  
+  // Delete a scheme
+  app.delete(`${apiPrefix}/admin/schemes/:id`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
+      // Pastikan skema ada
+      const existingScheme = await storage.getSchemeById(id);
+      if (!existingScheme) {
+        return res.status(404).json({ message: "Skema tidak ditemukan" });
+      }
+      
+      const result = await storage.deleteScheme(id);
+      
+      if (result) {
+        res.status(200).json({ message: "Skema berhasil dihapus" });
+      } else {
+        res.status(500).json({ message: "Failed to delete scheme" });
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Failed to delete scheme" });
     }
   });
 
