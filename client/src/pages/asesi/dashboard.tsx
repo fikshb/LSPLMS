@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { getQueryFn } from "@/lib/queryClient";
-import { Link } from "wouter";
+import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,6 +27,15 @@ import {
   ListChecks,
   User,
   AlertCircle,
+  Clock,
+  Download,
+  Upload,
+  LayoutDashboard,
+  FilePlus2,
+  FileCheck,
+  Info,
+  ClipboardList,
+  PlusCircle,
 } from "lucide-react";
 import { LSPLogo } from "@/assets/logo";
 import {
@@ -37,16 +46,44 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AsesiDashboard() {
   const { user, logoutMutation } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+
+  // Fetch user profile and completeness
+  const { data: profile, isLoading: isLoadingProfile } = useQuery<any>({
+    queryKey: ["/api/asesi/profile"],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: !!user && user.role === "asesi",
+    placeholderData: {
+      completeness: 80,
+      missingFields: ["alamat", "phoneNumber"],
+      isVerified: true,
+    }
+  });
 
   // Fetch user's applications
   const { data: applications = [], isLoading: isLoadingApplications } = useQuery<any[]>({
     queryKey: ["/api/asesi/applications"],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!user && user.role === "asesi",
+    placeholderData: [
+      {
+        id: 1,
+        schemeId: 2,
+        schemeName: "Pelaksana Penjamah Makanan",
+        status: "pending",
+        date: "2024-04-15",
+        progress: 25
+      }
+    ]
   });
 
   // Fetch certification schemes for recommendations
@@ -60,6 +97,41 @@ export default function AsesiDashboard() {
     queryKey: ["/api/schedules"],
     queryFn: getQueryFn({ on401: "throw" }),
   });
+  
+  // Fetch user's assessments
+  const { data: assessments = [], isLoading: isLoadingAssessments } = useQuery<any[]>({
+    queryKey: ["/api/asesi/assessments"],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: !!user && user.role === "asesi",
+    placeholderData: []
+  });
+  
+  // Fetch user's certificates
+  const { data: certificates = [], isLoading: isLoadingCertificates } = useQuery<any[]>({
+    queryKey: ["/api/asesi/certificates"],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: !!user && user.role === "asesi",
+    placeholderData: []
+  });
+  
+  // Get counts for badges
+  const pendingCount = applications.filter(app => app.status === "pending").length;
+  const inProgressCount = applications.filter(app => app.status === "in_progress").length;
+  const completedCount = applications.filter(app => app.status === "completed").length;
+  
+  // Handle apply for certification
+  const handleApplyForCertification = () => {
+    if (profile?.completeness < 100) {
+      toast({
+        title: "Profil belum lengkap",
+        description: "Lengkapi profil Anda terlebih dahulu sebelum mendaftar sertifikasi.",
+        variant: "destructive",
+      });
+      setActiveTab("profile");
+    } else {
+      navigate("/formulir-sertifikasi");
+    }
+  };
 
   return (
     <div className="flex h-screen bg-gray-50">
