@@ -209,12 +209,12 @@ export default function AdminDashboard() {
     placeholderData: []
   });
   
-  // Mutation functions dari API Services
-
   // Mutation untuk menambah asesor baru
   const createAsesorMutation = useMutation({
     mutationFn: async (newAsesor: AsesorFormValues) => {
-      return await createAsesor(newAsesor);
+      // Kembali menggunakan apiRequest langsung
+      const res = await apiRequest("POST", `/api/admin/asesors?nocache=${Date.now()}`, newAsesor);
+      return await res.json();
     },
     onSuccess: () => {
       toast({
@@ -239,7 +239,10 @@ export default function AdminDashboard() {
   const updateAsesorMutation = useMutation({
     mutationFn: async (updatedAsesor: AsesorFormValues & { id: number }) => {
       const { id, ...asesorData } = updatedAsesor;
-      return await updateAsesor(id, asesorData);
+      
+      // Kembali menggunakan apiRequest langsung
+      const res = await apiRequest("PATCH", `/api/admin/asesors/${id}?nocache=${Date.now()}`, asesorData);
+      return await res.json();
     },
     onSuccess: () => {
       toast({
