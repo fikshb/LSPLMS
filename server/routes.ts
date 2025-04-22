@@ -416,6 +416,231 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // API untuk bank soal
+  app.get(`${apiPrefix}/questions`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const schemeId = req.query.schemeId ? parseInt(req.query.schemeId as string) : undefined;
+      const unitId = req.query.unitId ? parseInt(req.query.unitId as string) : undefined;
+      
+      const questions = await storage.getQuestions(schemeId, unitId);
+      res.json(questions);
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+      res.status(500).json({ message: "Terjadi kesalahan saat mengambil data soal" });
+    }
+  });
+  
+  app.get(`${apiPrefix}/questions/:id`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const question = await storage.getQuestionById(id);
+      
+      if (!question) {
+        return res.status(404).json({ message: "Soal tidak ditemukan" });
+      }
+      
+      res.json(question);
+    } catch (error) {
+      console.error("Error fetching question:", error);
+      res.status(500).json({ message: "Terjadi kesalahan saat mengambil data soal" });
+    }
+  });
+  
+  app.post(`${apiPrefix}/questions`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      // Add created_by from authenticated user
+      const question = await storage.createQuestion({
+        ...req.body,
+        createdBy: req.user?.id
+      });
+      
+      res.status(201).json(question);
+    } catch (error) {
+      console.error("Error creating question:", error);
+      res.status(500).json({ message: "Terjadi kesalahan saat membuat soal" });
+    }
+  });
+  
+  app.patch(`${apiPrefix}/questions/:id`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const question = await storage.updateQuestion(id, req.body);
+      
+      res.json(question);
+    } catch (error) {
+      console.error("Error updating question:", error);
+      res.status(500).json({ message: "Terjadi kesalahan saat mengupdate soal" });
+    }
+  });
+  
+  app.delete(`${apiPrefix}/questions/:id`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteQuestion(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Soal tidak ditemukan" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error deleting question:", error);
+      res.status(500).json({ message: "Terjadi kesalahan saat menghapus soal" });
+    }
+  });
+  
+  // API untuk template ujian
+  app.get(`${apiPrefix}/examination-templates`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const schemeId = req.query.schemeId ? parseInt(req.query.schemeId as string) : undefined;
+      
+      const templates = await storage.getExaminationTemplates(schemeId);
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching examination templates:", error);
+      res.status(500).json({ message: "Terjadi kesalahan saat mengambil data template ujian" });
+    }
+  });
+  
+  app.get(`${apiPrefix}/examination-templates/:id`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const template = await storage.getExaminationTemplateById(id);
+      
+      if (!template) {
+        return res.status(404).json({ message: "Template ujian tidak ditemukan" });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error("Error fetching examination template:", error);
+      res.status(500).json({ message: "Terjadi kesalahan saat mengambil data template ujian" });
+    }
+  });
+  
+  app.post(`${apiPrefix}/examination-templates`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      // Add created_by from authenticated user
+      const template = await storage.createExaminationTemplate({
+        ...req.body,
+        createdBy: req.user?.id
+      });
+      
+      res.status(201).json(template);
+    } catch (error) {
+      console.error("Error creating examination template:", error);
+      res.status(500).json({ message: "Terjadi kesalahan saat membuat template ujian" });
+    }
+  });
+  
+  app.patch(`${apiPrefix}/examination-templates/:id`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const template = await storage.updateExaminationTemplate(id, req.body);
+      
+      res.json(template);
+    } catch (error) {
+      console.error("Error updating examination template:", error);
+      res.status(500).json({ message: "Terjadi kesalahan saat mengupdate template ujian" });
+    }
+  });
+  
+  app.delete(`${apiPrefix}/examination-templates/:id`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteExaminationTemplate(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Template ujian tidak ditemukan" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error deleting examination template:", error);
+      res.status(500).json({ message: "Terjadi kesalahan saat menghapus template ujian" });
+    }
+  });
+  
+  // API untuk ujian
+  app.get(`${apiPrefix}/examinations`, async (req: Request, res: Response) => {
+    try {
+      const applicationId = req.query.applicationId ? parseInt(req.query.applicationId as string) : undefined;
+      
+      const examinations = await storage.getExaminations(applicationId);
+      res.json(examinations);
+    } catch (error) {
+      console.error("Error fetching examinations:", error);
+      res.status(500).json({ message: "Terjadi kesalahan saat mengambil data ujian" });
+    }
+  });
+  
+  app.get(`${apiPrefix}/examinations/:id`, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const examination = await storage.getExaminationById(id);
+      
+      if (!examination) {
+        return res.status(404).json({ message: "Ujian tidak ditemukan" });
+      }
+      
+      res.json(examination);
+    } catch (error) {
+      console.error("Error fetching examination:", error);
+      res.status(500).json({ message: "Terjadi kesalahan saat mengambil data ujian" });
+    }
+  });
+  
+  app.post(`${apiPrefix}/examinations`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const examination = await storage.createExamination(req.body);
+      
+      res.status(201).json(examination);
+    } catch (error) {
+      console.error("Error creating examination:", error);
+      res.status(500).json({ message: "Terjadi kesalahan saat membuat ujian" });
+    }
+  });
+  
+  app.post(`${apiPrefix}/examinations/:id/start`, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const examination = await storage.startExamination(id);
+      
+      res.json(examination);
+    } catch (error) {
+      console.error("Error starting examination:", error);
+      res.status(500).json({ message: "Terjadi kesalahan saat memulai ujian" });
+    }
+  });
+  
+  app.post(`${apiPrefix}/examinations/:id/submit`, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const answers = req.body.answers;
+      
+      const examination = await storage.submitExamination(id, answers);
+      
+      res.json(examination);
+    } catch (error) {
+      console.error("Error submitting examination:", error);
+      res.status(500).json({ message: "Terjadi kesalahan saat mengirimkan ujian" });
+    }
+  });
+  
+  app.post(`${apiPrefix}/examinations/:id/evaluate`, requireAsesor, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const evaluatorId = req.user!.id;
+      
+      const examination = await storage.evaluateExamination(id, evaluatorId);
+      
+      res.json(examination);
+    } catch (error) {
+      console.error("Error evaluating examination:", error);
+      res.status(500).json({ message: "Terjadi kesalahan saat mengevaluasi ujian" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
