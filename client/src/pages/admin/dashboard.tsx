@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { getQueryFn } from "@/lib/queryClient";
 import { Link } from "wouter";
@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -286,6 +287,153 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex h-screen bg-gray-50">
+      {/* Dialog untuk tambah/edit asesor */}
+      <Dialog open={showAddAsesorDialog} onOpenChange={setShowAddAsesorDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{selectedAsesor ? "Edit Asesor" : "Tambah Asesor Baru"}</DialogTitle>
+            <DialogDescription>
+              {selectedAsesor
+                ? "Ubah data asesor dengan mengisi form di bawah ini."
+                : "Tambahkan asesor baru dengan mengisi form di bawah ini."}
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...asesorForm}>
+            <form onSubmit={asesorForm.handleSubmit(onSubmitAsesor)} className="space-y-4">
+              <FormField
+                control={asesorForm.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input placeholder="username_asesor" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={asesorForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="email@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={asesorForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{selectedAsesor ? "Password Baru (opsional)" : "Password"}</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="password" 
+                        placeholder={selectedAsesor ? "Kosongkan jika tidak diubah" : "Password minimal 6 karakter"} 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={asesorForm.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nama Lengkap</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nama lengkap asesor" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={asesorForm.control}
+                name="bidangKompetensi"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bidang Kompetensi</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Contoh: Digital Marketing, IT, dll" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={asesorForm.control}
+                name="nomorRegistrasi"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nomor Registrasi BNSP (opsional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="MET.000.123456 2022" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormDescription>
+                      Nomor registrasi asesor dari BNSP
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={asesorForm.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Asesor Aktif</FormLabel>
+                      <FormDescription>
+                        Jika dicentang, asesor dapat login dan melakukan asesmen
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter className="pt-4">
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => {
+                    setShowAddAsesorDialog(false);
+                    asesorForm.reset();
+                    setSelectedAsesor(null);
+                  }}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Batal
+                </Button>
+                <Button type="submit" className="bg-[#79A84B]">
+                  <Save className="h-4 w-4 mr-2" />
+                  {selectedAsesor ? "Perbarui Asesor" : "Tambah Asesor"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
       {/* Sidebar */}
       <div className="w-64 bg-white border-r flex flex-col">
         <div className="p-4 border-b">
