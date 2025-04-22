@@ -1,6 +1,15 @@
 import { Request, Response } from "express";
 import { storage } from "../storage";
 
+// Definisikan fungsi middleware requireAdmin yang diperlukan
+// untuk mengontrol akses ke endpoint admin
+function requireAdmin(req: Request, res: Response, next: Function) {
+  if (!req.isAuthenticated() || req.user.role !== 'admin') {
+    return res.status(403).json({ message: "Access denied" });
+  }
+  next();
+}
+
 export async function setupExaminationRoutes(app: any, apiPrefix: string) {
   // Get all examinations
   app.get(`${apiPrefix}/examinations`, async (req: Request, res: Response) => {
@@ -166,14 +175,148 @@ export async function setupExaminationRoutes(app: any, apiPrefix: string) {
   // Get eligible applications for examinations
   app.get(`${apiPrefix}/certification-applications/eligible`, async (req: Request, res: Response) => {
     try {
-      // Untuk sementara, kita gunakan data aplikasi sertifikasi yang ada
-      // TODO: Implementasikan logika untuk aplikasi yang eligible
-      const applications = [];  // Database belum siap, sementara return array kosong
-      res.json(applications);
+      // Buat data sample untuk aplikasi sertifikasi yang eligible
+      const sampleApplications = [
+        {
+          id: 1,
+          asesiId: 2,
+          schemeId: 1,
+          status: "approved",
+          asesi: {
+            userId: 4,
+            user: {
+              fullName: "Peserta Asesmen",
+              email: "peserta@peserta.com"
+            }
+          },
+          scheme: {
+            name: "Digital Marketing"
+          }
+        },
+        {
+          id: 2,
+          asesiId: 2,
+          schemeId: 2,
+          status: "approved",
+          asesi: {
+            userId: 4,
+            user: {
+              fullName: "Peserta Asesmen",
+              email: "peserta@peserta.com"
+            }
+          },
+          scheme: {
+            name: "Web Development"
+          }
+        }
+      ];
+      
+      res.json(sampleApplications);
     } catch (error: any) {
       console.error("Error fetching eligible applications:", error);
       res.status(500).json({
         message: "Terjadi kesalahan saat mengambil data aplikasi",
+        error: error.message,
+      });
+    }
+  });
+  
+  // Get applications for creating examinations
+  app.get(`${apiPrefix}/applications`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      // Buat data sample untuk aplikasi sertifikasi
+      const sampleApplications = [
+        {
+          id: 1,
+          asesiId: 2,
+          schemeId: 1,
+          status: "approved",
+          asesi: {
+            userId: 4,
+            user: {
+              fullName: "Peserta Asesmen",
+              email: "peserta@peserta.com"
+            }
+          },
+          scheme: {
+            name: "Digital Marketing"
+          }
+        },
+        {
+          id: 2,
+          asesiId: 2,
+          schemeId: 2,
+          status: "approved",
+          asesi: {
+            userId: 4,
+            user: {
+              fullName: "Peserta Asesmen",
+              email: "peserta@peserta.com"
+            }
+          },
+          scheme: {
+            name: "Web Development"
+          }
+        }
+      ];
+      
+      res.json(sampleApplications);
+    } catch (error: any) {
+      console.error("Error fetching applications:", error);
+      res.status(500).json({
+        message: "Terjadi kesalahan saat mengambil data aplikasi",
+        error: error.message,
+      });
+    }
+  });
+  
+  // Get examination templates
+  app.get(`${apiPrefix}/examination-templates`, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { schemeId } = req.query;
+      
+      // Buat data sample untuk template ujian
+      const sampleTemplates = [
+        {
+          id: 1,
+          name: "Template Ujian Digital Marketing",
+          schemeId: 1,
+          duration: 60, // dalam menit
+          passingScore: 70,
+          totalQuestions: 20,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: 1,
+          scheme: {
+            name: "Digital Marketing"
+          }
+        },
+        {
+          id: 2,
+          name: "Template Ujian Web Development",
+          schemeId: 2,
+          duration: 90, // dalam menit
+          passingScore: 75,
+          totalQuestions: 25,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: 1,
+          scheme: {
+            name: "Web Development"
+          }
+        }
+      ];
+      
+      // Filter berdasarkan schemeId jika ada
+      const templates = schemeId 
+        ? sampleTemplates.filter(t => t.schemeId === parseInt(schemeId as string))
+        : sampleTemplates;
+      
+      res.json(templates);
+    } catch (error: any) {
+      console.error("Error fetching examination templates:", error);
+      res.status(500).json({
+        message: "Terjadi kesalahan saat mengambil data template ujian",
         error: error.message,
       });
     }
