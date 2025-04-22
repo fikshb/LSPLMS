@@ -14,7 +14,21 @@ import {
   partners,
   type Partner,
   type InsertPartner,
-  asesors
+  asesors,
+  questions,
+  type Question,
+  type InsertQuestion,
+  examinationTemplates,
+  type ExaminationTemplate,
+  type InsertExaminationTemplate,
+  examinations,
+  type Examination,
+  type InsertExamination,
+  examinationQuestions,
+  type ExaminationQuestion,
+  type InsertExaminationQuestion,
+  competencyUnits,
+  schemeCompetencyUnits
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, or, and, ilike, count } from "drizzle-orm";
@@ -72,6 +86,28 @@ export interface IStorage {
   
   // Admin methods
   getDashboardCounts(): Promise<{ usersCount: number, activeAssessmentsCount: number, schemesCount: number, asesorsCount: number }>;
+  
+  // Question Bank methods
+  getQuestions(schemeId?: number, unitId?: number): Promise<Question[]>;
+  getQuestionById(id: number): Promise<Question | undefined>;
+  createQuestion(question: InsertQuestion): Promise<Question>;
+  updateQuestion(id: number, question: Partial<InsertQuestion>): Promise<Question>;
+  deleteQuestion(id: number): Promise<boolean>;
+  
+  // Examination Template methods
+  getExaminationTemplates(schemeId?: number): Promise<ExaminationTemplate[]>;
+  getExaminationTemplateById(id: number): Promise<ExaminationTemplate | undefined>;
+  createExaminationTemplate(template: InsertExaminationTemplate): Promise<ExaminationTemplate>;
+  updateExaminationTemplate(id: number, template: Partial<InsertExaminationTemplate>): Promise<ExaminationTemplate>;
+  deleteExaminationTemplate(id: number): Promise<boolean>;
+  
+  // Examination methods
+  getExaminations(applicationId?: number): Promise<Examination[]>;
+  getExaminationById(id: number): Promise<Examination | undefined>;
+  createExamination(examination: InsertExamination): Promise<Examination>;
+  startExamination(id: number): Promise<Examination>;
+  submitExamination(id: number, answers: { questionId: number, answer: string }[]): Promise<Examination>;
+  evaluateExamination(id: number, evaluatorId: number): Promise<Examination>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -334,6 +370,272 @@ export class DatabaseStorage implements IStorage {
     const salt = randomBytes(16).toString("hex");
     const buf = (await scryptAsync(password, salt, 64)) as Buffer;
     return `${buf.toString("hex")}.${salt}`;
+  }
+  
+  // Question Bank methods
+  async getQuestions(schemeId?: number, unitId?: number): Promise<Question[]> {
+    let query = db.select().from(questions);
+    
+    if (schemeId) {
+      query = query.where(eq(questions.schemeId, schemeId));
+    }
+    
+    if (unitId) {
+      query = query.where(eq(questions.unitId, unitId));
+    }
+    
+    return await query;
+  }
+  
+  async getQuestionById(id: number): Promise<Question | undefined> {
+    const [question] = await db.select().from(questions).where(eq(questions.id, id));
+    return question || undefined;
+  }
+  
+  async createQuestion(insertQuestion: InsertQuestion): Promise<Question> {
+    const [question] = await db
+      .insert(questions)
+      .values(insertQuestion)
+      .returning();
+    return question;
+  }
+  
+  async updateQuestion(id: number, questionData: Partial<InsertQuestion>): Promise<Question> {
+    const [question] = await db
+      .update(questions)
+      .set({
+        ...questionData,
+        updatedAt: new Date()
+      })
+      .where(eq(questions.id, id))
+      .returning();
+    return question;
+  }
+  
+  async deleteQuestion(id: number): Promise<boolean> {
+    try {
+      // Check if question exists before deleting
+      const question = await this.getQuestionById(id);
+      if (!question) {
+        return false;
+      }
+      
+      // Delete question
+      await db.delete(questions).where(eq(questions.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting question:", error);
+      return false;
+    }
+  }
+  
+  // Examination Template methods
+  async getExaminationTemplates(schemeId?: number): Promise<ExaminationTemplate[]> {
+    let query = db.select().from(examinationTemplates);
+    
+    if (schemeId) {
+      query = query.where(eq(examinationTemplates.schemeId, schemeId));
+    }
+    
+    return await query;
+  }
+  
+  async getExaminationTemplateById(id: number): Promise<ExaminationTemplate | undefined> {
+    const [template] = await db.select().from(examinationTemplates).where(eq(examinationTemplates.id, id));
+    return template || undefined;
+  }
+  
+  async createExaminationTemplate(insertTemplate: InsertExaminationTemplate): Promise<ExaminationTemplate> {
+    const [template] = await db
+      .insert(examinationTemplates)
+      .values(insertTemplate)
+      .returning();
+    return template;
+  }
+  
+  async updateExaminationTemplate(id: number, templateData: Partial<InsertExaminationTemplate>): Promise<ExaminationTemplate> {
+    const [template] = await db
+      .update(examinationTemplates)
+      .set({
+        ...templateData,
+        updatedAt: new Date()
+      })
+      .where(eq(examinationTemplates.id, id))
+      .returning();
+    return template;
+  }
+  
+  async deleteExaminationTemplate(id: number): Promise<boolean> {
+    try {
+      // Check if template exists before deleting
+      const template = await this.getExaminationTemplateById(id);
+      if (!template) {
+        return false;
+      }
+      
+      // Delete template
+      await db.delete(examinationTemplates).where(eq(examinationTemplates.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting examination template:", error);
+      return false;
+    }
+  }
+  
+  // Examination methods
+  async getExaminations(applicationId?: number): Promise<Examination[]> {
+    let query = db.select().from(examinations);
+    
+    if (applicationId) {
+      query = query.where(eq(examinations.applicationId, applicationId));
+    }
+    
+    return await query;
+  }
+  
+  async getExaminationById(id: number): Promise<Examination | undefined> {
+    const [examination] = await db.select().from(examinations).where(eq(examinations.id, id));
+    return examination || undefined;
+  }
+  
+  async createExamination(insertExamination: InsertExamination): Promise<Examination> {
+    // Fetch template to get duration and total questions
+    const template = await this.getExaminationTemplateById(insertExamination.templateId);
+    
+    const [examination] = await db
+      .insert(examinations)
+      .values({
+        ...insertExamination,
+        duration: template?.duration || 60,
+        totalQuestions: template?.totalQuestions || 20,
+        status: "pending"
+      })
+      .returning();
+    
+    // If we have a template and it defines to randomize questions, select random questions from the question bank
+    if (template && template.randomizeQuestions) {
+      // Get questions for the scheme
+      const questionsPool = await this.getQuestions(template.schemeId);
+      
+      // Shuffle and select questions up to totalQuestions
+      const selectedQuestions = this.shuffleArray(questionsPool).slice(0, template.totalQuestions);
+      
+      // Add questions to examination
+      for (let i = 0; i < selectedQuestions.length; i++) {
+        await db.insert(examinationQuestions).values({
+          examinationId: examination.id,
+          questionId: selectedQuestions[i].id,
+          order: i + 1
+        });
+      }
+    }
+    
+    return examination;
+  }
+  
+  async startExamination(id: number): Promise<Examination> {
+    const [examination] = await db
+      .update(examinations)
+      .set({
+        startTime: new Date(),
+        status: "in_progress",
+        updatedAt: new Date()
+      })
+      .where(eq(examinations.id, id))
+      .returning();
+    
+    return examination;
+  }
+  
+  async submitExamination(id: number, answers: { questionId: number, answer: string }[]): Promise<Examination> {
+    // Update examination status
+    const [examination] = await db
+      .update(examinations)
+      .set({
+        endTime: new Date(),
+        status: "completed",
+        updatedAt: new Date()
+      })
+      .where(eq(examinations.id, id))
+      .returning();
+    
+    // Save user answers
+    for (const answer of answers) {
+      // Get corresponding examination question
+      const [examQuestion] = await db
+        .select()
+        .from(examinationQuestions)
+        .where(
+          and(
+            eq(examinationQuestions.examinationId, id),
+            eq(examinationQuestions.questionId, answer.questionId)
+          )
+        );
+      
+      if (examQuestion) {
+        // Get the original question to check for correctness
+        const question = await this.getQuestionById(answer.questionId);
+        
+        if (question) {
+          // Update user answer
+          await db
+            .update(examinationQuestions)
+            .set({
+              userAnswer: answer.answer,
+              isCorrect: answer.answer === question.correctAnswer,
+              answeredAt: new Date()
+            })
+            .where(eq(examinationQuestions.id, examQuestion.id));
+        }
+      }
+    }
+    
+    return examination;
+  }
+  
+  async evaluateExamination(id: number, evaluatorId: number): Promise<Examination> {
+    // Get all examination questions
+    const examQuestions = await db
+      .select()
+      .from(examinationQuestions)
+      .where(eq(examinationQuestions.examinationId, id));
+    
+    // Calculate score
+    const totalQuestions = examQuestions.length;
+    const correctAnswers = examQuestions.filter(q => q.isCorrect).length;
+    const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+    
+    // Get template to check passing score
+    const examination = await this.getExaminationById(id);
+    const template = examination ? await this.getExaminationTemplateById(examination.templateId) : undefined;
+    const passingScore = template?.passingScore || 70;
+    
+    // Update examination with score and status
+    const [updatedExamination] = await db
+      .update(examinations)
+      .set({
+        correctAnswers,
+        score,
+        passed: score >= passingScore,
+        evaluatedBy: evaluatorId,
+        evaluatedAt: new Date(),
+        status: "evaluated",
+        updatedAt: new Date()
+      })
+      .where(eq(examinations.id, id))
+      .returning();
+    
+    return updatedExamination;
+  }
+  
+  // Utility function to shuffle array (Fisher-Yates algorithm)
+  private shuffleArray<T>(array: T[]): T[] {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
   }
 
   // Seed the database with initial data if it's empty
