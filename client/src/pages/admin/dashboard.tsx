@@ -10,8 +10,49 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Users,
   Award,
@@ -24,6 +65,15 @@ import {
   Home,
   ChevronDown,
   ChevronRight,
+  PlusCircle,
+  Search,
+  CheckCircle,
+  AlertCircle,
+  Edit,
+  Trash,
+  Loader2,
+  X,
+  Save,
 } from "lucide-react";
 import { LSPLogo } from "@/assets/logo";
 import {
@@ -85,9 +135,25 @@ const StatCard: React.FC<StatCardProps> = ({
   );
 };
 
+// Form validation schema untuk tambah/edit asesor
+const asesorFormSchema = z.object({
+  username: z.string().min(4, "Username minimal 4 karakter"),
+  email: z.string().email("Email tidak valid"),
+  password: z.string().min(6, "Password minimal 6 karakter"),
+  fullName: z.string().min(3, "Nama lengkap minimal 3 karakter"),
+  bidangKompetensi: z.string().min(3, "Bidang kompetensi minimal 3 karakter"),
+  nomorRegistrasi: z.string().optional(),
+  isActive: z.boolean().default(true),
+});
+
+type AsesorFormValues = z.infer<typeof asesorFormSchema>;
+
 export default function AdminDashboard() {
   const { user, logoutMutation } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const [showAddAsesorDialog, setShowAddAsesorDialog] = useState(false);
+  const [selectedAsesor, setSelectedAsesor] = useState<any | null>(null);
+  const { toast } = useToast();
 
   // Define type for dashboard stats
   interface DashboardCounts {
@@ -96,6 +162,20 @@ export default function AdminDashboard() {
     schemesCount: number;
     asesorsCount: number;
   }
+  
+  // Form untuk tambah/edit asesor
+  const asesorForm = useForm<AsesorFormValues>({
+    resolver: zodResolver(asesorFormSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+      password: "",
+      fullName: "",
+      bidangKompetensi: "",
+      nomorRegistrasi: "",
+      isActive: true,
+    },
+  });
 
   // Fetch counts for the dashboard
   const { data: counts = { 
@@ -120,6 +200,89 @@ export default function AdminDashboard() {
     queryKey: ["/api/schedules"],
     queryFn: getQueryFn({ on401: "throw" }),
   });
+  
+  // Fetch asesor list
+  const { data: asesors = [], isLoading: isLoadingAsesors } = useQuery<any[]>({
+    queryKey: ["/api/admin/asesors"],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: !!user && user.role === "admin",
+    placeholderData: []
+  });
+  
+  // Mutation untuk menambah asesor baru
+  const createAsesorMutation = useMutation({
+    mutationFn: async (newAsesor: AsesorFormValues) => {
+      const res = await apiRequest("POST", "/api/admin/asesors", newAsesor);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Asesor berhasil ditambahkan",
+        description: "Asesor baru telah berhasil didaftarkan.",
+      });
+      setShowAddAsesorDialog(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/asesors"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/counts"] });
+      asesorForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Gagal menambahkan asesor",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Mutation untuk mengedit asesor
+  const updateAsesorMutation = useMutation({
+    mutationFn: async (updatedAsesor: AsesorFormValues & { id: number }) => {
+      const { id, ...asesorData } = updatedAsesor;
+      const res = await apiRequest("PATCH", `/api/admin/asesors/${id}`, asesorData);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Asesor berhasil diperbarui",
+        description: "Data asesor telah berhasil diperbarui.",
+      });
+      setShowAddAsesorDialog(false);
+      setSelectedAsesor(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/asesors"] });
+      asesorForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Gagal memperbarui asesor",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Handler untuk proses submit form asesor
+  const onSubmitAsesor = (data: AsesorFormValues) => {
+    if (selectedAsesor) {
+      updateAsesorMutation.mutate({ ...data, id: selectedAsesor.id });
+    } else {
+      createAsesorMutation.mutate(data);
+    }
+  };
+  
+  // Handler untuk edit asesor yang sudah ada
+  const handleEditAsesor = (asesor: any) => {
+    setSelectedAsesor(asesor);
+    asesorForm.reset({
+      username: asesor.username,
+      email: asesor.email,
+      password: "", // Kosongkan password, bisa diupdate jika perlu
+      fullName: asesor.fullName || "",
+      bidangKompetensi: asesor.bidangKompetensi || "",
+      nomorRegistrasi: asesor.nomorRegistrasi || "",
+      isActive: asesor.isActive !== false, // Default to true if undefined
+    });
+    setShowAddAsesorDialog(true);
+  };
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -452,8 +615,89 @@ export default function AdminDashboard() {
                     </div>
                   </TabsContent>
                   <TabsContent value="asesor">
-                    <div className="text-center py-10 text-muted-foreground">
-                      Fitur manajemen asesor sedang dalam pengembangan.
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <div className="relative w-full md:w-64">
+                          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            type="search" 
+                            placeholder="Cari asesor..." 
+                            className="pl-8" 
+                          />
+                        </div>
+                        <Button className="bg-[#79A84B]" onClick={() => setShowAddAsesorDialog(true)}>
+                          <PlusCircle className="h-4 w-4 mr-2" />
+                          Tambah Asesor
+                        </Button>
+                      </div>
+
+                      <div className="border rounded-lg overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Nama</TableHead>
+                              <TableHead>Email</TableHead>
+                              <TableHead>Bidang Kompetensi</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Aksi</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {isLoadingAsesors ? (
+                              <TableRow>
+                                <TableCell colSpan={5} className="text-center py-10">
+                                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                                </TableCell>
+                              </TableRow>
+                            ) : asesors && asesors.length > 0 ? (
+                              asesors.map((asesor: any) => (
+                                <TableRow key={asesor.id}>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <Avatar className="h-8 w-8">
+                                        <AvatarImage src={asesor.profilePicture} />
+                                        <AvatarFallback className="bg-[#79A84B] text-white">
+                                          {asesor.fullName ? asesor.fullName.charAt(0).toUpperCase() : 'A'}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div className="font-medium">{asesor.fullName || asesor.username}</div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>{asesor.email}</TableCell>
+                                  <TableCell>{asesor.bidangKompetensi || '-'}</TableCell>
+                                  <TableCell>
+                                    {asesor.isActive ? (
+                                      <Badge variant="outline" className="border-green-500 text-green-500">
+                                        <CheckCircle className="h-3 w-3 mr-1" /> Aktif
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="outline" className="border-amber-500 text-amber-500">
+                                        <AlertCircle className="h-3 w-3 mr-1" /> Nonaktif
+                                      </Badge>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <Button variant="outline" size="sm" onClick={() => handleEditAsesor(asesor)}>
+                                        <Edit className="h-3 w-3 mr-1" /> Edit
+                                      </Button>
+                                      <Button variant="outline" size="sm" className="text-red-500">
+                                        <Trash className="h-3 w-3 mr-1" /> Hapus
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            ) : (
+                              <TableRow>
+                                <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                                  Belum ada asesor yang terdaftar
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
                     </div>
                   </TabsContent>
                   <TabsContent value="admin">
