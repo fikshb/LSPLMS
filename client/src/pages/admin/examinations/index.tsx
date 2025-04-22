@@ -90,8 +90,11 @@ export default function ExaminationsPage() {
     isLoading: isLoadingExaminations,
     error: examinationsError,
   } = useQuery<Examination[]>({
-    queryKey: ["/api/examinations", { random: Math.random() }],
+    queryKey: ["/api/examinations"],
     retry: false,
+    refetchOnWindowFocus: false, // Mencegah refetch setiap kali jendela mendapatkan fokus
+    refetchOnMount: true,
+    staleTime: 30000, // Data dianggap stale setelah 30 detik
   });
 
   // Fetch templates for creating new examinations
@@ -101,6 +104,9 @@ export default function ExaminationsPage() {
   } = useQuery<ExaminationTemplate[]>({
     queryKey: ["/api/examination-templates"],
     retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    staleTime: 60000, // 1 menit
   });
   
   // Fetch applications for creating new examinations
@@ -110,6 +116,9 @@ export default function ExaminationsPage() {
   } = useQuery<CertificationApplication[]>({
     queryKey: ["/api/applications"],
     retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    staleTime: 60000, // 1 menit
   });
 
   // Create examination mutation
