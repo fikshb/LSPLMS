@@ -34,6 +34,11 @@ import ExaminationTemplatesPage from "@/pages/admin/examination-templates";
 import ExaminationsPage from "@/pages/admin/examinations";
 import ExaminationDetailPage from "@/pages/admin/examinations/[id]";
 
+// Halaman Dokumentasi (Tidak ada di menu navigasi)
+import DocsPage from "@/pages/docs";
+import DocsExportPage from "@/pages/docs/export";
+import InstallationPage from "@/pages/docs/installation";
+
 function Router() {
   return (
     <Switch>
@@ -49,6 +54,11 @@ function Router() {
       {/* Rute khusus */}
       <Route path="/auth" component={AuthPage} />
       <Route path="/unauthorized" component={UnauthorizedPage} />
+      
+      {/* Rute dokumentasi (tidak ada di navigasi) */}
+      <Route path="/docs" component={DocsPage} />
+      <Route path="/docs/export" component={DocsExportPage} />
+      <Route path="/docs/installation" component={InstallationPage} />
       
       {/* Rute publik dengan layout header dan footer */}
       <Route path="/">
